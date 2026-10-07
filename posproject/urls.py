@@ -1,23 +1,9 @@
-"""
-URL configuration for posproject project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/6.0/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
-from django.urls import include, path
+from django.urls import path
+
 from accounts import views as acc
+from catalog import views as cat
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -26,9 +12,18 @@ urlpatterns = [
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('dashboard/', acc.dashboard, name='dashboard'),
     path('billing/', acc.pos, name='pos'),
-    path('staff/', acc.staff_list, name='staff_list'),
-    path('staff/add/', acc.staff_add, name='staff_add'),
-    path('staff/<int:pk>/edit/', acc.staff_edit, name='staff_edit'),
-    path('staff/<int:pk>/toggle/', acc.staff_toggle, name='staff_toggle'),
-    path('', include('catalog.urls')),
+
+    path('staff/', acc.StaffList.as_view(), name='staff_list'),
+    path('staff/add/', acc.StaffCreate.as_view(), name='staff_add'),
+    path('staff/<int:pk>/edit/', acc.StaffUpdate.as_view(), name='staff_edit'),
+
+    path('suppliers/', cat.SupplierList.as_view(), name='supplier_list'),
+    path('suppliers/add/', cat.SupplierCreate.as_view(), name='supplier_add'),
+    path('suppliers/<int:pk>/edit/', cat.SupplierUpdate.as_view(), name='supplier_edit'),
+    path('suppliers/<int:pk>/delete/', cat.SupplierDelete.as_view(), name='supplier_delete'),
+
+    path('products/', cat.ProductList.as_view(), name='product_list'),
+    path('products/add/', cat.ProductCreate.as_view(), name='product_add'),
+    path('products/<int:pk>/edit/', cat.ProductUpdate.as_view(), name='product_edit'),
+    path('products/<int:pk>/delete/', cat.ProductDelete.as_view(), name='product_delete'),
 ]

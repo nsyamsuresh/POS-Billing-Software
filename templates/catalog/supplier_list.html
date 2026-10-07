@@ -2,25 +2,25 @@
 {% block title %}Suppliers{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h3 class="m-0">Suppliers</h3>
-  <a href="{% url 'supplier_add' %}" class="btn btn-dark">+ Add supplier</a>
+  <h1 class="h4 mb-0">Suppliers</h1>
+  <a class="btn btn-dark" href="{% url 'supplier_add' %}">Add supplier</a>
 </div>
-<div class="card"><div class="table-responsive">
-  <table class="table table-hover align-middle mb-0">
-    <thead><tr><th>Name</th><th>Phone</th><th>Address</th><th></th></tr></thead>
-    <tbody>
-    {% for s in suppliers %}
-      <tr>
-        <td>{{ s.name }}</td><td>{{ s.phone }}</td><td>{{ s.address|truncatechars:60 }}</td>
-        <td class="text-nowrap">
-          <a href="{% url 'supplier_edit' s.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
-          <a href="{% url 'supplier_delete' s.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
-        </td>
-      </tr>
-    {% empty %}
-      <tr><td colspan="4" class="text-center text-muted py-4">No suppliers yet.</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</div></div>
+<div class="table-responsive">
+<table class="table table-striped align-middle bg-white">
+  <thead><tr><th>Name</th><th>Phone</th><th>Address</th><th></th></tr></thead>
+  <tbody>
+  {% for s in suppliers %}
+    <tr>
+      <td>{{ s.name }}</td><td>{{ s.phone|default:"-" }}</td><td>{{ s.address|default:"-" }}</td>
+      <td class="text-nowrap">
+        <a class="btn btn-sm btn-outline-dark" href="{% url 'supplier_edit' s.pk %}">Edit</a>
+        <a class="btn btn-sm btn-outline-danger" href="{% url 'supplier_delete' s.pk %}">Delete</a>
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="4" class="text-center text-muted py-4">No suppliers yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
 {% endblock %}

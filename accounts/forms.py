@@ -1,50 +1,45 @@
 from django import forms
-from django.contrib.auth.password_validation import validate_password
 from .models import User
 
-
 class BootstrapMixin:
-    """Adds Bootstrap 5 classes to every field widget."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
-            w = field.widget
-            if isinstance(w, forms.CheckboxInput):
-                w.attrs['class'] = 'form-check-input'
-            elif isinstance(w, forms.Select):
-                w.attrs['class'] = 'form-select'
+            widget = field.widget
+            if isinstance(widget, forms.CheckboxInput):
+                widget.attrs['class'] = 'form-check-input'
+            elif isinstance(widget, forms.Select):
+                widget.attrs['class'] = 'form-select'
             else:
-                w.attrs['class'] = 'form-control'
+                widget.attrs['class'] = 'form-control'
 
-
-class StaffForm(BootstrapMixin, forms.ModelForm):
-    password = forms.CharField(
-        widget=forms.PasswordInput(render_value=False),
-        required=False,
-        help_text='Leave blank to keep the current password (edit only).',
-    )
+class StaffCreateForm(BootstrapMixin, forms.ModelForm):
+    password = forms.CharField(widget=forms.PasswordInput)
 
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email', 'role', 'is_active']
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if not self.instance.pk:
-            self.fields['password'].required = True
-            self.fields['password'].help_text = ''
-
-    def clean_password(self):
-        pw = self.cleaned_data.get('password')
-        if pw:
-            validate_password(pw, self.instance)
-        return pw
+        fields = ['username', 'first_name', 'last_name', 'email', 'role']
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        pw = self.cleaned_data.get('password')
-        if pw:
-            user.set_password(pw)
+        user.set_password(self.cleaned_data['password'])
+        if commit:
+            user.save()
+        return user
+
+class StaffEditForm(BootstrapMixin, forms.ModelForm):
+    new_password = forms.CharField(
+        required=False, widget=forms.PasswordInput,
+        help_text='Leave blank to keep the current password.')
+
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'email', 'role', 'is_active']
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if self.cleaned_data['new_password']:
+            user.set_password(self.cleaned_data['new_password'])
         if commit:
             user.save()
         return user
