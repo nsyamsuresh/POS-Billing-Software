@@ -4,6 +4,7 @@ from django.urls import path
 from billing import views as bill
 from accounts import views as acc
 from catalog import views as cat
+from reports import views as rep
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -38,5 +39,6 @@ urlpatterns = [
     path('purchases/add/', bill.purchase_create, name='purchase_add'),
     path('purchases/<int:pk>/pay/', bill.purchase_pay, name='purchase_pay'),
     path('ledger/', bill.ledger, name='ledger'),
+    path('reports/', rep.reports, name='reports'),
 
 ]

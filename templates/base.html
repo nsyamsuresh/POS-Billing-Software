@@ -1,4 +1,4 @@
-{% load static %}<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -12,17 +12,62 @@
     @media (min-width: 768px) {
       .sidebar { width: 230px; flex: none; min-height: calc(100vh - 56px); }
     }
+
+    /* Mobile layout (served under /m/) */
+    body.m-body { background: #cfd6dc; }
+    .m-frame { max-width: 430px; min-height: 100vh; margin: 0 auto; background: #f8f9fa;
+               box-shadow: 0 0 24px rgba(0,0,0,.25); position: relative; }
+    .m-top { position: sticky; top: 0; z-index: 20; background: #212529; color: #fff;
+             padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
+    .m-top a.m-title { color: #fff; text-decoration: none; font-weight: 600; font-size: 1.1rem; }
+    .m-main { padding: 14px 14px 90px; min-width: 0; }
+    .m-tabs, .m-sheet { position: fixed; left: 50%; transform: translateX(-50%);
+                        width: 100%; max-width: 430px; background: #fff; }
+    .m-tabs { bottom: 0; z-index: 30; display: flex; border-top: 1px solid #dee2e6;
+              padding-bottom: env(safe-area-inset-bottom, 0px); }
+    .m-tabs a, .m-tabs button { flex: 1; text-align: center; padding: 14px 4px; font-size: .8rem;
+                                color: #555; text-decoration: none; background: none; border: 0; }
+    .m-tabs a.on { color: #fff; background: #212529; }
+    .m-sheet { bottom: 52px; z-index: 25; border-top: 1px solid #dee2e6; box-shadow: 0 -6px 16px rgba(0,0,0,.12); }
+    .m-sheet a { display: block; padding: 12px 18px; color: #212529; text-decoration: none; border-bottom: 1px solid #eee; }
+    /* stack columns even when the browser window is wide */
+    .m-frame .row > [class*="col-md-"], .m-frame .row > [class*="col-lg-"] { flex: 0 0 100%; max-width: 100%; width: 100%; }
+    /* tables become cards */
+    .m-cards table.table, .m-cards table.table > tbody, .m-cards table.table > tbody > tr,
+    .m-cards table.table > tbody > tr > td { display: block; width: 100%; }
+    .m-cards table.table > thead { display: none; }
+    .m-cards table.table > tbody > tr { background: #fff; border: 1px solid #dee2e6; border-radius: 10px;
+                                        margin-bottom: 10px; padding: 6px 12px; }
+    .m-cards table.table > tbody > tr > td { border: 0; padding: 4px 0; display: flex; justify-content: space-between;
+                                             align-items: center; gap: 12px; text-align: right;
+                                             box-shadow: none; background: transparent; }
+    .m-cards table.table > tbody > tr > td::before { content: attr(data-label); font-weight: 600; color: #6c757d; text-align: left; }
+
     @media print {
       .no-print { display: none !important; }
       body { background: #fff !important; }
-      main { padding: 0 !important; }
+      main, .m-main { padding: 0 !important; }
+      .m-frame { box-shadow: none; max-width: 100%; }
     }
   </style>
   {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-light">
+<body class="{% if request.is_mobile %}m-body{% else %}bg-light{% endif %}">
 {% with page=request.resolver_match.url_name|default:'' %}
 
+{% if request.is_mobile %}
+<div class="m-frame m-cards">
+  <header class="m-top no-print">
+    <a class="m-title" href="{% url 'home' %}">POS Billing</a>
+    <div class="d-flex align-items-center gap-2">
+      <a class="btn btn-outline-light btn-sm" href="/">Desktop</a>
+      <form method="post" action="{% url 'logout' %}" class="m-0">{% csrf_token %}
+        <button class="btn btn-outline-light btn-sm">Log out</button>
+      </form>
+    </div>
+  </header>
+  <main class="m-main">
+{% else %}
 <nav class="navbar navbar-dark bg-dark no-print">
   <div class="container-fluid">
     <div class="d-flex align-items-center gap-2">
@@ -39,16 +84,15 @@
     </div>
     {% if user.is_authenticated %}
     <div class="d-flex align-items-center gap-3">
+      <a class="btn btn-outline-light btn-sm" href="/m/">Mobile view</a>
       <span class="text-white-50 small d-none d-sm-inline">{{ user.username }} ({{ user.get_role_display }})</span>
-      <form method="post" action="{% url 'logout' %}" class="m-0">
-        {% csrf_token %}
+      <form method="post" action="{% url 'logout' %}" class="m-0">{% csrf_token %}
         <button class="btn btn-outline-light btn-sm">Log out</button>
       </form>
     </div>
     {% endif %}
   </div>
 </nav>
-
 <div class="d-flex">
   {% if user.is_authenticated and user.is_admin_role %}
   <aside class="offcanvas-md offcanvas-start bg-white border-end sidebar no-print"
@@ -58,33 +102,76 @@
       <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body p-3">
-        <ul class="nav flex-column gap-1 w-100">
-            <li class="nav-item"><a class="nav-link {% if page == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Dashboard</a></li>
-            <li class="nav-item"><a class="nav-link {% if page == 'pos' %}active{% endif %}" href="{% url 'pos' %}">Billing</a></li>
-            <li class="nav-item"><a class="nav-link {% if page == 'sale_list' or page == 'receipt' %}active{% endif %}" href="{% url 'sale_list' %}">Bills</a></li>
-            <li class="nav-item"><a class="nav-link {% if 'product' in page %}active{% endif %}" href="{% url 'product_list' %}">Products</a></li>
-            <li class="nav-item"><a class="nav-link {% if 'supplier' in page %}active{% endif %}" href="{% url 'supplier_list' %}">Suppliers</a></li>
-            <li class="nav-item"><a class="nav-link {% if 'staff' in page %}active{% endif %}" href="{% url 'staff_list' %}">Staff</a></li>
-            <li class="nav-item"><a class="nav-link {% if 'return' in page %}active{% endif %}" href="{% url 'return_list' %}">Returns</a></li>
-            <li class="nav-item"><a class="nav-link {% if 'purchase' in page %}active{% endif %}" href="{% url 'purchase_list' %}">Purchases</a></li>
-            <li class="nav-item"><a class="nav-link {% if page == 'ledger' %}active{% endif %}" href="{% url 'ledger' %}">Ledger</a></li>
-        </ul>
+      <ul class="nav flex-column gap-1 w-100">
+        <li class="nav-item"><a class="nav-link {% if page == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link {% if page == 'pos' %}active{% endif %}" href="{% url 'pos' %}">Billing</a></li>
+        <li class="nav-item"><a class="nav-link {% if page == 'sale_list' or page == 'receipt' %}active{% endif %}" href="{% url 'sale_list' %}">Bills</a></li>
+        <li class="nav-item"><a class="nav-link {% if 'return' in page %}active{% endif %}" href="{% url 'return_list' %}">Returns</a></li>
+        <li class="nav-item"><a class="nav-link {% if 'product' in page %}active{% endif %}" href="{% url 'product_list' %}">Products</a></li>
+        <li class="nav-item"><a class="nav-link {% if 'supplier' in page %}active{% endif %}" href="{% url 'supplier_list' %}">Suppliers</a></li>
+        <li class="nav-item"><a class="nav-link {% if 'purchase' in page %}active{% endif %}" href="{% url 'purchase_list' %}">Purchases</a></li>
+        <li class="nav-item"><a class="nav-link {% if page == 'ledger' %}active{% endif %}" href="{% url 'ledger' %}">Ledger</a></li>
+        <li class="nav-item"><a class="nav-link {% if page == 'reports' %}active{% endif %}" href="{% url 'reports' %}">Reports</a></li>
+        <li class="nav-item"><a class="nav-link {% if 'staff' in page %}active{% endif %}" href="{% url 'staff_list' %}">Staff</a></li>
+      </ul>
     </div>
   </aside>
   {% endif %}
-
   <main class="flex-grow-1 p-3 p-md-4" style="min-width:0">
+{% endif %}
+
     {% for m in messages %}
       <div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags }}{% endif %} alert-dismissible fade show no-print">
         {{ m }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
     {% endfor %}
     {% block content %}{% endblock %}
+
+{% if request.is_mobile %}
+  </main>
+
+  {% if user.is_admin_role %}
+  <div class="collapse m-sheet no-print" id="m-more">
+    <a href="{% url 'sale_list' %}">Bills</a>
+    <a href="{% url 'return_list' %}">Returns</a>
+    <a href="{% url 'supplier_list' %}">Suppliers</a>
+    <a href="{% url 'purchase_list' %}">Purchases</a>
+    <a href="{% url 'ledger' %}">Ledger</a>
+    <a href="{% url 'staff_list' %}">Staff</a>
+  </div>
+  <nav class="m-tabs no-print">
+    <a class="{% if page == 'dashboard' %}on{% endif %}" href="{% url 'dashboard' %}">Home</a>
+    <a class="{% if page == 'pos' %}on{% endif %}" href="{% url 'pos' %}">Billing</a>
+    <a class="{% if 'product' in page %}on{% endif %}" href="{% url 'product_list' %}">Products</a>
+    <a class="{% if page == 'reports' %}on{% endif %}" href="{% url 'reports' %}">Reports</a>
+    <button type="button" data-bs-toggle="collapse" data-bs-target="#m-more">More</button>
+  </nav>
+  {% else %}
+  <nav class="m-tabs no-print">
+    <a class="{% if page == 'pos' %}on{% endif %}" href="{% url 'pos' %}">New bill</a>
+    <a class="{% if page == 'sale_list' or page == 'receipt' %}on{% endif %}" href="{% url 'sale_list' %}">My bills</a>
+  </nav>
+  {% endif %}
+</div>
+{% else %}
   </main>
 </div>
+{% endif %}
 
 {% endwith %}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% if request.is_mobile %}
+<script>
+document.querySelectorAll('table.table').forEach(function (t) {
+  var heads = [].map.call(t.querySelectorAll('thead th'), function (h) { return h.textContent.trim(); });
+  t.querySelectorAll('tbody tr').forEach(function (tr) {
+    [].forEach.call(tr.children, function (td, i) {
+      if (td.colSpan === 1 && heads[i]) td.setAttribute('data-label', heads[i]);
+    });
+  });
+});
+</script>
+{% endif %}
 {% block extra_js %}{% endblock %}
 </body>
 </html>
