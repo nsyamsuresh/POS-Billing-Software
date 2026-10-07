@@ -15,6 +15,7 @@ urlpatterns = [
     path('billing/checkout/', bill.checkout, name='checkout'),
     path('bills/', bill.sale_list, name='sale_list'),
     path('bills/<int:pk>/', bill.receipt, name='receipt'),
+    
 
     path('staff/', acc.StaffList.as_view(), name='staff_list'),
     path('staff/add/', acc.StaffCreate.as_view(), name='staff_add'),

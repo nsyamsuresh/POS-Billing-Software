@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Bill {{ sale.bill_no }}{% endblock %}
+{% block extra_head %}
+<style>
+  .receipt { max-width: 340px; margin: 0 auto; background: #fff; padding: 16px; font-size: 14px; }
+  .receipt table { width: 100%; }
+  .receipt td, .receipt th { padding: 2px 0; vertical-align: top; }
+  .receipt .r { text-align: right; }
+  @media print {
+    @page { margin: 6mm; }
+    .receipt { max-width: 100%; padding: 0; }
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="receipt border">
+  <div class="text-center mb-2">
+    <div class="fw-bold fs-5">Shop Name</div>
+    <div class="small text-muted">Tax invoice</div>
+  </div>
+  <div class="small mb-2">
+    Bill no: <strong>{{ sale.bill_no }}</strong><br>
+    Date: {{ sale.created_at|date:"d M Y, H:i" }}<br>
+    Served by: {{ sale.staff.get_full_name|default:sale.staff.username }}
+    {% if sale.customer_name %}<br>Customer: {{ sale.customer_name }}{% endif %}
+    {% if sale.customer_phone %}<br>Phone: {{ sale.customer_phone }}{% endif %}
+  </div>
+  <hr class="my-2">
+  <table>
+    <thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Rate</th><th class="r">Amount</th></tr></thead>
+    <tbody>
+    {% for i in sale.items.all %}
+      <tr>
+        <td>{{ i.product.name }}<br><span class="text-muted small">GST {{ i.gst_percent }}%</span></td>
+        <td class="r">{{ i.quantity }}</td>
+        <td class="r">{{ i.unit_price }}</td>
+        <td class="r">{{ i.line_total }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <hr class="my-2">
+  <table>
+    <tr><td>Subtotal</td><td class="r">₹{{ sale.subtotal }}</td></tr>
+    <tr><td>Discount</td><td class="r">-₹{{ sale.discount }}</td></tr>
+    <tr><td>GST</td><td class="r">₹{{ sale.gst_total }}</td></tr>
+    <tr class="fw-bold fs-5"><td>Total</td><td class="r">₹{{ sale.total }}</td></tr>
+  </table>
+  <div class="small mt-2">
+    Paid by: {% for p in sale.payments.all %}{{ p.get_method_display }}{% if not forloop.last %}, {% endif %}{% endfor %}
+  </div>
+  <div class="text-center small mt-3">Thank you. Please visit again.</div>
+</div>
+
+<div class="text-center mt-3 no-print">
+  <button class="btn btn-dark" onclick="window.print()">Print bill</button>
+  <a class="btn btn-outline-dark" href="{% url 'pos' %}">New bill</a>
+  <a class="btn btn-outline-secondary" href="{% url 'sale_list' %}">All bills</a>
+</div>
+{% endblock %}
