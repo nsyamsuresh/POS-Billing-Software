@@ -1,29 +1,41 @@
 {% extends 'base.html' %}
 {% block title %}Login{% endblock %}
+
+{% block extra_head %}
+<style>
+  .login-wrap { min-height: calc(100vh - var(--top-h) - 3rem); display: grid; place-items: center; }
+  .login-card { width: 100%; max-width: 400px; padding: 2rem 1.75rem; border-radius: 22px; animation: loginIn .5s var(--ease) backwards; }
+  @keyframes loginIn { from { opacity: 0; transform: translateY(14px) scale(.98); } to { opacity: 1; transform: none; } }
+  .login-mark { width: 52px; height: 52px; border-radius: 16px; background: var(--ink); color: #fff; display: grid; place-items: center; margin: 0 auto 1rem; }
+  .login-mark .ic { width: 26px; height: 26px; }
+  .login-card h4 { font-weight: 700; letter-spacing: -.02em; }
+  .login-card .sub { color: var(--mute); font-size: .88rem; text-align: center; margin-bottom: 1.4rem; }
+  .m-frame .login-wrap { min-height: calc(100vh - 140px); }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center mt-5">
-  <div class="col-11 col-sm-8 col-md-5 col-lg-4">
-    <div class="card shadow-sm">
-      <div class="card-body p-4">
-        <h4 class="mb-3 text-center">Sign in</h4>
-        {% if form.errors %}
-          <div class="alert alert-danger py-2">Incorrect username or password.</div>
-        {% endif %}
-        <form method="post">
-          {% csrf_token %}
-          <input type="hidden" name="next" value="{{ next }}">
-          <div class="mb-3">
-            <label class="form-label">Username</label>
-            <input type="text" name="username" class="form-control" required autofocus>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Password</label>
-            <input type="password" name="password" class="form-control" required>
-          </div>
-          <button class="btn btn-dark w-100">Log in</button>
-        </form>
+<div class="login-wrap">
+  <div class="card login-card">
+    <div class="login-mark"><svg class="ic"><use href="#i-grid"/></svg></div>
+    <h4 class="mb-1 text-center">Sign in</h4>
+    <p class="sub">Enter your details to start billing</p>
+    {% if form.errors %}
+      <div class="alert alert-danger py-2">Incorrect username or password.</div>
+    {% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <div class="mb-3">
+        <label class="form-label">Username</label>
+        <input type="text" name="username" class="form-control" required autofocus>
       </div>
-    </div>
+      <div class="mb-3">
+        <label class="form-label">Password</label>
+        <input type="password" name="password" class="form-control" required>
+      </div>
+      <button class="btn btn-dark btn-lg w-100">Log in</button>
+    </form>
   </div>
 </div>
 {% endblock %}

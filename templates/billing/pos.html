@@ -1,59 +1,247 @@
 {% extends 'base.html' %}
 {% block title %}Billing{% endblock %}
+
+{% block extra_head %}
+<style>
+  .pos-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; gap: 12px; }
+  .pos-head p { margin: 0; color: var(--mute); font-size: .85rem; }
+  .pos-grid { display: grid; grid-template-columns: minmax(0, 1fr) 390px; gap: 18px; align-items: start; }
+  @media (max-width: 991.98px) { .pos-grid { grid-template-columns: 1fr; } }
+  .m-frame .pos-grid { grid-template-columns: 1fr; }
+
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); padding: 18px; }
+  .panel-title { font-size: 1.05rem; font-weight: 650; letter-spacing: -.015em; margin: 0; }
+  .panel-sub { margin: 2px 0 0; font-size: .8rem; color: var(--mute); }
+
+  /* ---- search + category tabs ---- */
+  .panel-top { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  .search-wrap { position: relative; flex: 1 1 280px; max-width: 420px; }
+  .search-wrap > .ic { position: absolute; left: 13px; top: 50%; translate: 0 -50%; color: var(--mute); width: 18px; height: 18px; pointer-events: none; }
+  .search-wrap input { padding-left: 40px; padding-right: 44px; background: var(--soft); border-color: transparent; }
+  .search-wrap input:focus { background: #fff; }
+  .scan-hint { position: absolute; right: 8px; top: 50%; translate: 0 -50%; display: grid; place-items: center; width: 30px; height: 30px;
+               border-radius: 8px; background: #fff; color: var(--ink-2); border: 1px solid var(--line); }
+  .scan-hint .ic { width: 16px; height: 16px; }
+  .m-frame .search-wrap { max-width: none; }
+
+  .seg { display: flex; gap: 4px; background: var(--soft); border-radius: 12px; padding: 4px; overflow-x: auto; scrollbar-width: none; }
+  .seg::-webkit-scrollbar { display: none; }
+  .seg button { flex: 1 0 auto; border: 0; background: transparent; border-radius: 9px; padding: .45rem .95rem; font-weight: 600;
+                font-size: .82rem; color: var(--ink-2); white-space: nowrap; transition: background .2s, color .2s, box-shadow .2s; }
+  .seg button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+  #cat-tabs { margin-bottom: 14px; }
+
+  /* ---- product cards ---- */
+  .pgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+  .m-frame .pgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .pcard { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 10px 10px 0; cursor: pointer;
+           overflow: hidden; display: flex; flex-direction: column; user-select: none; -webkit-tap-highlight-color: transparent;
+           transition: transform .25s var(--ease), box-shadow .25s, border-color .2s; animation: cardIn .45s var(--ease) backwards; }
+  .pcard:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(16, 16, 24, .10); border-color: #dcdce3; }
+  .pcard:active { transform: scale(.975); }
+  .pcard.pop { border-color: var(--ink); }
+  .pcard.is-out { opacity: .55; cursor: not-allowed; }
+  .pcard.is-out:hover { transform: none; box-shadow: none; border-color: var(--line); }
+  @keyframes cardIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+  .ptile { position: relative; aspect-ratio: 5 / 3.4; border-radius: 12px; display: grid; place-items: center; background: var(--tile);
+           background: color-mix(in srgb, var(--tint, #c9c9d1) 24%, #f1f1f4); overflow: hidden; }
+  .ptile b { font-size: 2.1rem; font-weight: 700; letter-spacing: -.04em; color: rgba(12, 12, 14, .26); }
+  .pstock { position: absolute; right: 8px; bottom: 8px; font-size: .68rem; font-weight: 600; padding: 3px 8px; border-radius: 999px;
+            background: rgba(255, 255, 255, .85); color: var(--ink-2); }
+  .pstock.out { background: #fde8ec; color: #b81d36; }
+  .pqty { position: absolute; left: 8px; top: 8px; min-width: 28px; text-align: center; font-size: .72rem; font-weight: 700; padding: 3px 8px;
+          border-radius: 999px; background: var(--ink); color: #fff; scale: 0; transition: scale .25s var(--ease); }
+  .pqty.on { scale: 1; }
+
+  .pname { font-weight: 650; font-size: .95rem; letter-spacing: -.01em; margin: 11px 2px 8px; line-height: 1.25; }
+  .pchips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0 2px 12px; min-height: 26px; }
+  .chip { border: 1px solid var(--line); border-radius: 8px; padding: 2px 9px; font-size: .74rem; font-weight: 600; color: var(--ink); background: #fff; }
+  .cdot { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; font-weight: 500; color: var(--ink-2); }
+  .cdot i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .18); background: var(--tint, #ccc); }
+
+  .pfoot { display: flex; justify-content: space-between; align-items: center; background: var(--soft); margin: auto -10px 0; padding: 11px 12px 11px 14px; }
+  .price { font-size: 1.28rem; font-weight: 700; letter-spacing: -.03em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .price small { font-size: .9rem; font-weight: 600; color: var(--mute); }
+  .price .per { font-size: .72rem; font-weight: 500; color: var(--mute); letter-spacing: 0; margin-left: 2px; }
+  .padd { width: 36px; height: 36px; border-radius: 11px; background: var(--ink); color: #fff; display: grid; place-items: center;
+          transition: transform .2s var(--ease), background .2s; }
+  .padd .ic { width: 17px; height: 17px; }
+  .pcard:hover .padd { transform: scale(1.08); }
+  .pcard.pop .padd { background: var(--ok); transform: scale(1.18); }
+  .no-match { text-align: center; color: var(--mute); padding: 48px 12px; }
+  .no-match .ic { width: 34px; height: 34px; margin-bottom: 8px; opacity: .6; }
+
+  /* ---- cart ---- */
+  .cart-panel { position: sticky; top: calc(var(--top-h) + 16px); max-height: calc(100vh - var(--top-h) - 32px); display: flex; flex-direction: column; padding: 0; }
+  @media (max-width: 991.98px) { .cart-panel { position: static; max-height: none; } }
+  .m-frame .cart-panel { position: static; max-height: none; }
+  .cart-head { display: flex; justify-content: space-between; align-items: flex-start; padding: 18px 18px 12px; }
+  .link-danger { border: 0; background: none; color: var(--bad); font-weight: 600; font-size: .82rem; padding: 4px 0; }
+  .link-danger[hidden] { display: none; }
+  .cart-form { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+  .cart-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0 18px 8px; }
+  @media (max-width: 991.98px) { .cart-scroll { overflow: visible; } }
+  .m-frame .cart-scroll { overflow: visible; }
+  .cart-foot { flex: none; padding: 14px 18px 18px; border-top: 1px solid var(--line); background: #fff; border-radius: 0 0 20px 20px; }
+
+  .cart-empty { text-align: center; color: var(--mute); padding: 26px 10px 30px; font-size: .88rem; }
+  .cart-empty .ic { width: 34px; height: 34px; margin-bottom: 8px; opacity: .55; }
+  .ci { position: relative; display: flex; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 16px; background: #fff; margin-bottom: 10px; }
+  .ci.ci-new { animation: slideIn .38s var(--ease); }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+  .ci-tile { width: 54px; height: 54px; border-radius: 12px; flex: none; display: grid; place-items: center; font-weight: 700; color: rgba(12, 12, 14, .3);
+             background: var(--tile); background: color-mix(in srgb, var(--tint, #c9c9d1) 24%, #f1f1f4); letter-spacing: -.03em; }
+  .ci-main { flex: 1; min-width: 0; }
+  .ci-name { font-weight: 650; font-size: .9rem; letter-spacing: -.01em; padding-right: 26px; line-height: 1.25; }
+  .ci-meta { font-size: .76rem; color: var(--mute); margin: 2px 0 8px; }
+  .ci-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .ci-amt { font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .ci.bump .ci-amt { animation: bump .3s var(--ease); }
+  @keyframes bump { 40% { transform: scale(1.12); } }
+  .ci-x { position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; border-radius: 8px; border: 0; background: transparent; color: var(--mute);
+          display: grid; place-items: center; transition: background .2s, color .2s; }
+  .ci-x:hover { background: #fde8ec; color: var(--bad); }
+  .ci-x .ic { width: 14px; height: 14px; }
+  .stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+  .stepper button { width: 30px; height: 30px; border: 0; background: transparent; border-radius: 9px; display: grid; place-items: center; transition: background .15s, transform .15s; }
+  .stepper button:hover { background: var(--soft); }
+  .stepper button:active { transform: scale(.88); }
+  .stepper .ic { width: 14px; height: 14px; }
+  .stepper input { width: 46px; border: 0; text-align: center; font-weight: 600; font-size: .88rem; background: transparent; padding: 0; -moz-appearance: textfield; }
+  .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .stepper input:focus { outline: 0; }
+
+  details.cust { border: 1px solid var(--line); border-radius: 14px; padding: 0 14px; margin: 4px 0 10px; }
+  details.cust summary { cursor: pointer; padding: 11px 0; font-weight: 600; font-size: .85rem; color: var(--ink-2); list-style: none; display: flex; justify-content: space-between; }
+  details.cust summary::-webkit-details-marker { display: none; }
+  details.cust summary::after { content: '+'; font-weight: 500; color: var(--mute); }
+  details.cust[open] summary::after { content: '\2212'; }
+  details.cust[open] { padding-bottom: 6px; }
+  .field { margin-bottom: 10px; }
+
+  .trow { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: .88rem; color: var(--ink-2); }
+  .trow span:last-child { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .trow.grand { margin-top: 6px; padding-top: 12px; border-top: 1px dashed #d4d4dc; font-size: 1rem; font-weight: 650; color: var(--ink); }
+  .trow.grand span:last-child { font-size: 1.25rem; font-weight: 700; letter-spacing: -.02em; }
+  .pay-seg { margin: 12px 0 10px; }
+  .pay-seg button { flex: 1; }
+  .cash-box { margin-bottom: 12px; }
+  .cash-line { display: flex; gap: 8px; }
+  .cash-line .btn { white-space: nowrap; }
+  .pay-btn { width: 100%; display: flex; justify-content: space-between; align-items: center; }
+  .pay-btn.is-empty { opacity: .55; }
+  .pay-btn:disabled { opacity: .7; }
+  #pay-total { font-variant-numeric: tabular-nums; }
+
+  /* mobile floating cart bar */
+  .cart-fab { display: none; }
+  .m-frame .cart-fab { display: flex; position: fixed; left: 50%; bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 10px);
+                       width: calc(100% - 28px); max-width: 402px; z-index: 24; justify-content: space-between; align-items: center;
+                       padding: 13px 16px; border: 0; border-radius: 16px; background: var(--ink); color: #fff; font-weight: 600;
+                       box-shadow: 0 14px 30px rgba(0, 0, 0, .3); translate: -50% 24px; opacity: 0; pointer-events: none;
+                       transition: translate .35s var(--ease), opacity .25s; }
+  .m-frame .cart-fab.show { translate: -50% 0; opacity: 1; pointer-events: auto; }
+
+  .toasts { position: fixed; top: 72px; right: 16px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+  .m-body .toasts { top: auto; right: auto; left: 50%; bottom: 150px; translate: -50% 0; width: min(380px, calc(100vw - 28px)); }
+  .toast-i { background: var(--ink); color: #fff; padding: 11px 16px; border-radius: 12px; font-size: .86rem; font-weight: 500;
+             box-shadow: 0 12px 30px rgba(0, 0, 0, .25); animation: slideIn .3s var(--ease); max-width: 360px; }
+  .toast-i.warn { background: #9a1b31; }
+  .toast-i.out { opacity: 0; transform: translateY(-6px); transition: opacity .25s, transform .25s; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">New bill</h1>
+<div class="pos-head">
+  <div>
+    <h1 class="h4 mb-0">New bill</h1>
+    <p>Pick products, then complete the sale</p>
+  </div>
   <a class="btn btn-outline-dark btn-sm" href="{% url 'sale_list' %}">Bill history</a>
 </div>
 
-<div class="row g-3">
-  <div class="col-lg-8">
-    <div class="card card-body mb-3">
-      <input id="search" class="form-control form-control-lg" autocomplete="off" autofocus
-             placeholder="Scan a barcode or type a product name, then press Enter">
-      <div id="results" class="list-group mt-2"></div>
-    </div>
-    <div class="card">
-      <div class="table-responsive">
-        <table class="table align-middle mb-0">
-          <thead><tr><th>Product</th><th>Rate</th><th style="width:170px">Qty</th><th class="text-end">Amount</th><th></th></tr></thead>
-          <tbody id="cart-body"></tbody>
-        </table>
+<div class="pos-grid">
+  <section class="panel" id="products-panel">
+    <div class="panel-top">
+      <div>
+        <h2 class="panel-title">Select products</h2>
+        <p class="panel-sub">Scan a barcode or tap a product to add it</p>
+      </div>
+      <div class="search-wrap">
+        <svg class="ic"><use href="#i-search"/></svg>
+        <input id="search" class="form-control" autocomplete="off" autofocus
+               placeholder="Scan a barcode or type a product name, then press Enter">
+        <span class="scan-hint" title="Barcode scanners type into this box"><svg class="ic"><use href="#i-scan"/></svg></span>
       </div>
     </div>
-  </div>
+    <div class="seg" id="cat-tabs" hidden></div>
+    <div class="pgrid" id="product-grid"></div>
+    <div class="no-match" id="no-match" hidden>
+      <svg class="ic"><use href="#i-search"/></svg>
+      <div>No product matches your search.</div>
+    </div>
+  </section>
 
-  <div class="col-lg-4">
-    <form method="post" action="{% url 'checkout' %}" id="bill-form" class="card card-body">
+  <aside class="panel cart-panel" id="cart-panel">
+    <div class="cart-head">
+      <div>
+        <h2 class="panel-title">Cart details</h2>
+        <p class="panel-sub"><span id="cart-count">0</span> <span id="cart-count-label">items</span> selected</p>
+      </div>
+      <button type="button" class="link-danger" id="clear-cart" hidden>Clear all</button>
+    </div>
+
+    <form method="post" action="{% url 'checkout' %}" id="bill-form" class="cart-form">
       {% csrf_token %}
       <input type="hidden" name="cart" id="cart-field">
-      <div class="mb-2"><label class="form-label">Customer name (optional)</label>
-        <input class="form-control" name="customer_name" maxlength="100"></div>
-      <div class="mb-3"><label class="form-label">Customer phone (optional)</label>
-        <input class="form-control" name="customer_phone" maxlength="20"></div>
-      <div class="mb-3"><label class="form-label">Discount (₹)</label>
-        <input class="form-control" type="number" step="0.01" min="0" name="discount" id="discount" value="0"></div>
+      <div class="cart-scroll">
+        <div id="cart-body"></div>
 
-      <dl class="row mb-3">
-        <dt class="col-6 fw-normal">Subtotal</dt><dd class="col-6 text-end" id="t-sub">₹0.00</dd>
-        <dt class="col-6 fw-normal">Discount</dt><dd class="col-6 text-end" id="t-disc">₹0.00</dd>
-        <dt class="col-6 fw-normal">GST</dt><dd class="col-6 text-end" id="t-gst">₹0.00</dd>
-        <dt class="col-6 fs-5">Total</dt><dd class="col-6 text-end fs-5 fw-bold" id="t-total">₹0.00</dd>
-      </dl>
+        <details class="cust">
+          <summary>Customer details (optional)</summary>
+          <div class="field"><label class="form-label">Customer name</label>
+            <input class="form-control" name="customer_name" maxlength="100"></div>
+          <div class="field"><label class="form-label">Customer phone</label>
+            <input class="form-control" name="customer_phone" maxlength="20"></div>
+        </details>
 
-      <div class="mb-3"><label class="form-label">Payment method</label>
-        <select class="form-select" name="method" id="method">
-          <option value="cash">Cash</option><option value="card">Card</option><option value="upi">UPI</option>
-        </select></div>
-      <div id="cash-box" class="mb-3">
-        <label class="form-label">Cash received (₹)</label>
-        <input class="form-control" type="number" step="0.01" min="0" id="received">
-        <div class="form-text">Change to return: <strong id="change">₹0.00</strong></div>
+        <div class="field"><label class="form-label">Discount (₹)</label>
+          <input class="form-control" type="number" step="0.01" min="0" name="discount" id="discount" value="0"></div>
       </div>
-      <button class="btn btn-dark btn-lg" id="pay-btn">Complete sale</button>
+
+      <div class="cart-foot">
+        <div class="trow"><span>Subtotal</span><span id="t-sub">₹0.00</span></div>
+        <div class="trow"><span>Discount</span><span id="t-disc">₹0.00</span></div>
+        <div class="trow"><span>GST</span><span id="t-gst">₹0.00</span></div>
+        <div class="trow grand"><span>Total</span><span id="t-total">₹0.00</span></div>
+
+        <div class="seg pay-seg" id="pay-seg" role="group" aria-label="Payment method">
+          <button type="button" data-m="cash">Cash</button>
+          <button type="button" data-m="card">Card</button>
+          <button type="button" data-m="upi">UPI</button>
+        </div>
+        <select class="visually-hidden" name="method" id="method" tabindex="-1" aria-hidden="true">
+          <option value="cash">Cash</option><option value="card">Card</option><option value="upi">UPI</option>
+        </select>
+
+        <div id="cash-box" class="cash-box">
+          <label class="form-label">Cash received (₹)</label>
+          <div class="cash-line">
+            <input class="form-control" type="number" step="0.01" min="0" id="received">
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="exact-btn">Exact</button>
+          </div>
+          <div class="form-text">Change to return: <strong id="change">₹0.00</strong></div>
+        </div>
+        <button class="btn btn-dark btn-lg pay-btn is-empty" id="pay-btn"><span>Complete sale</span><span id="pay-total">₹0.00</span></button>
+      </div>
     </form>
-  </div>
+  </aside>
 </div>
+
+<button type="button" class="cart-fab no-print" id="cart-fab">
+  <span><span id="fab-count">0</span> in cart</span><span id="fab-total">₹0.00</span>
+</button>
 {{ products|json_script:"product-data" }}
 {% endblock %}
 
@@ -64,14 +252,21 @@
   var byId = {};
   PRODUCTS.forEach(function (p) { byId[p.id] = p; });
   var cart = {};
+  var lastAdded = null;
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var coarse = window.matchMedia && matchMedia('(pointer: coarse)').matches;
 
   var searchEl = document.getElementById('search');
-  var resultsEl = document.getElementById('results');
+  var gridEl = document.getElementById('product-grid');
+  var noMatchEl = document.getElementById('no-match');
+  var tabsEl = document.getElementById('cat-tabs');
   var bodyEl = document.getElementById('cart-body');
   var discountEl = document.getElementById('discount');
   var methodEl = document.getElementById('method');
   var receivedEl = document.getElementById('received');
   var form = document.getElementById('bill-form');
+  var payBtn = document.getElementById('pay-btn');
+  var activeCat = '';
 
   function fmt(n) { return '\u20B9' + n.toFixed(2); }
   function r2(n) { return Math.round((n + 1e-9) * 100) / 100; }
@@ -80,60 +275,181 @@
     var extra = [p.size, p.color].filter(Boolean).join(' / ');
     return extra ? p.name + ' (' + extra + ')' : p.name;
   }
+  function initials(p) {
+    return String(p.name || '?').trim().split(/\s+/).slice(0, 2).map(function (w) { return w.charAt(0); }).join('').toUpperCase();
+  }
+  function validColor(c) {
+    return !!(c && window.CSS && CSS.supports && CSS.supports('color', String(c).trim()));
+  }
+  function tint(el, p) { if (validColor(p.color)) el.style.setProperty('--tint', String(p.color).trim()); }
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  function icon(id) {
+    var s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    s.setAttribute('class', 'ic');
+    var u = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    u.setAttribute('href', '#' + id);
+    s.appendChild(u);
+    return s;
+  }
 
+  /* ---------- toasts ---------- */
+  var toastBox = null;
+  function toast(msg, warn) {
+    if (!toastBox) { toastBox = el('div', 'toasts'); toastBox.setAttribute('aria-live', 'polite'); document.body.appendChild(toastBox); }
+    var t = el('div', 'toast-i' + (warn ? ' warn' : ''), msg);
+    toastBox.appendChild(t);
+    setTimeout(function () { t.classList.add('out'); setTimeout(function () { t.remove(); }, 300); }, 2600);
+  }
+
+  /* ---------- number tween for totals ---------- */
+  var shown = {}, raf = {};
+  function tween(id, to) {
+    var node = document.getElementById(id);
+    var from = shown[id] || 0;
+    shown[id] = to;
+    if (raf[id]) cancelAnimationFrame(raf[id]);
+    if (reduce || from === to) { node.textContent = fmt(to); return; }
+    var start = null, dur = 320;
+    function step(ts) {
+      if (start === null) start = ts;
+      var p = Math.min((ts - start) / dur, 1), e = 1 - Math.pow(1 - p, 3);
+      node.textContent = fmt(from + (to - from) * e);
+      if (p < 1) raf[id] = requestAnimationFrame(step); else node.textContent = fmt(to);
+    }
+    raf[id] = requestAnimationFrame(step);
+  }
+
+  /* ---------- stock / cart logic (unchanged behaviour) ---------- */
   function setQty(id, q) {
     var p = byId[id];
     q = r2(q);
     if (q <= 0) { delete cart[id]; }
     else if (q > p.stock) {
-      alert('Only ' + p.stock + ' ' + p.unit + ' of ' + p.name + ' in stock.');
-      cart[id] = p.stock;
+      toast('Only ' + p.stock + ' ' + p.unit + ' of ' + p.name + ' in stock.', true);
+      if (p.stock > 0) cart[id] = p.stock; else delete cart[id];
     } else { cart[id] = q; }
+    lastAdded = id;
     render();
   }
 
-  function pick(id) {
+  var cards = {};
+  function pick(id, fromSearch) {
+    var p = byId[id];
+    if (p.stock <= 0) { toast(p.name + ' is out of stock.', true); return; }
     setQty(id, (cart[id] || 0) + 1);
-    searchEl.value = '';
-    resultsEl.textContent = '';
-    searchEl.focus();
+    var c = cards[id];
+    if (c) { c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); setTimeout(function () { c.classList.remove('pop'); }, 400); }
+    if (fromSearch) { searchEl.value = ''; applyFilter(); }
+    if (fromSearch || !coarse) searchEl.focus();
   }
 
+  /* ---------- product grid ---------- */
+  function buildGrid() {
+    var cats = [];
+    PRODUCTS.forEach(function (p) { if (p.category && cats.indexOf(p.category) === -1) cats.push(p.category); });
+    if (cats.length > 1) {
+      tabsEl.hidden = false;
+      ['All products'].concat(cats).forEach(function (c, i) {
+        var b = el('button', i === 0 ? 'on' : '', c);
+        b.type = 'button';
+        b.addEventListener('click', function () {
+          activeCat = i === 0 ? '' : c;
+          [].forEach.call(tabsEl.children, function (x) { x.classList.remove('on'); });
+          b.classList.add('on');
+          applyFilter();
+        });
+        tabsEl.appendChild(b);
+      });
+    }
+
+    PRODUCTS.forEach(function (p, i) {
+      var c = el('div', 'pcard' + (p.stock <= 0 ? ' is-out' : ''));
+      c.setAttribute('role', 'button');
+      c.tabIndex = 0;
+      c.setAttribute('aria-label', 'Add ' + label(p));
+      c.style.animationDelay = Math.min(i, 14) * 28 + 'ms';
+      tint(c, p);
+
+      var tile = el('div', 'ptile');
+      tile.appendChild(el('b', '', initials(p)));
+      var qty = el('span', 'pqty', '');
+      tile.appendChild(qty);
+      var st = el('span', 'pstock' + (p.stock <= 0 ? ' out' : ''), p.stock <= 0 ? 'Out of stock' : (+p.stock) + ' ' + p.unit + ' left');
+      tile.appendChild(st);
+      c.appendChild(tile);
+
+      c.appendChild(el('div', 'pname', p.name));
+      var chips = el('div', 'pchips');
+      if (p.size) chips.appendChild(el('span', 'chip', p.size));
+      if (p.color) {
+        var cd = el('span', 'cdot');
+        var dot = document.createElement('i');
+        cd.appendChild(dot);
+        cd.appendChild(document.createTextNode(p.color));
+        chips.appendChild(cd);
+      }
+      c.appendChild(chips);
+
+      var foot = el('div', 'pfoot');
+      var parts = p.price.toFixed(2).split('.');
+      var price = el('div', 'price');
+      price.appendChild(document.createTextNode('\u20B9' + parts[0]));
+      price.appendChild(el('small', '', '.' + parts[1]));
+      if (p.unit === 'meter') price.appendChild(el('span', 'per', '/ m'));
+      foot.appendChild(price);
+      var add = el('span', 'padd');
+      add.appendChild(icon('i-plus'));
+      foot.appendChild(add);
+      c.appendChild(foot);
+
+      c.addEventListener('click', function () { pick(p.id, false); });
+      c.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(p.id, false); }
+      });
+      c._p = p; c._qty = qty;
+      cards[p.id] = c;
+      gridEl.appendChild(c);
+    });
+  }
+
+  function matchTerm(p, term) {
+    return label(p).toLowerCase().indexOf(term) !== -1 ||
+           (p.barcode && String(p.barcode).toLowerCase().indexOf(term) !== -1);
+  }
+  function applyFilter() {
+    var term = searchEl.value.trim().toLowerCase();
+    var visible = 0;
+    PRODUCTS.forEach(function (p) {
+      var ok = (!activeCat || p.category === activeCat) && (!term || matchTerm(p, term));
+      cards[p.id].hidden = !ok;
+      if (ok) visible++;
+    });
+    noMatchEl.hidden = visible > 0;
+  }
   function matches(term) {
     term = term.toLowerCase();
-    return PRODUCTS.filter(function (p) {
-      return label(p).toLowerCase().indexOf(term) !== -1 ||
-             (p.barcode && p.barcode.toLowerCase().indexOf(term) !== -1);
-    }).slice(0, 8);
+    return PRODUCTS.filter(function (p) { return matchTerm(p, term); }).slice(0, 8);
   }
 
-  searchEl.addEventListener('input', function () {
-    resultsEl.textContent = '';
-    var t = searchEl.value.trim();
-    if (!t) return;
-    matches(t).forEach(function (p) {
-      var b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'list-group-item list-group-item-action d-flex justify-content-between';
-      var a = document.createElement('span'); a.textContent = label(p);
-      var c = document.createElement('span');
-      c.textContent = fmt(p.price) + ' / ' + p.unit + '  |  stock ' + p.stock;
-      b.appendChild(a); b.appendChild(c);
-      b.addEventListener('click', function () { pick(p.id); });
-      resultsEl.appendChild(b);
-    });
-  });
-
+  searchEl.addEventListener('input', applyFilter);
   searchEl.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { searchEl.value = ''; applyFilter(); return; }
     if (e.key !== 'Enter') return;
     e.preventDefault();
     var t = searchEl.value.trim().toLowerCase();
     if (!t) return;
-    var exact = PRODUCTS.filter(function (p) { return p.barcode && p.barcode.toLowerCase() === t; })[0];
+    var exact = PRODUCTS.filter(function (p) { return p.barcode && String(p.barcode).toLowerCase() === t; })[0];
     var found = exact || matches(t)[0];
-    if (found) pick(found.id);
+    if (found) pick(found.id, true);
+    else toast('No product found for "' + searchEl.value.trim() + '".', true);
   });
 
+  /* ---------- totals (unchanged maths) ---------- */
   function totals() {
     var ids = Object.keys(cart), subtotal = 0;
     ids.forEach(function (id) { subtotal += r2(byId[id].price * cart[id]); });
@@ -150,85 +466,110 @@
     return { subtotal: r2(subtotal), discount: r2(discount), gst: gst, total: r2(subtotal - discount + gst) };
   }
 
+  /* ---------- cart rendering ---------- */
   function render() {
     bodyEl.textContent = '';
     var ids = Object.keys(cart);
     if (!ids.length) {
-      var tr0 = document.createElement('tr');
-      var td0 = document.createElement('td');
-      td0.colSpan = 5; td0.className = 'text-center text-muted py-4';
-      td0.textContent = 'The bill is empty. Search for a product above.';
-      tr0.appendChild(td0); bodyEl.appendChild(tr0);
+      var empty = el('div', 'cart-empty');
+      empty.appendChild(icon('i-cart'));
+      empty.appendChild(el('div', '', 'The bill is empty. Tap a product to add it.'));
+      bodyEl.appendChild(empty);
     }
     ids.forEach(function (id) {
       var p = byId[id], q = cart[id];
-      var tr = document.createElement('tr');
-      function cell(text, cls) {
-        var td = document.createElement('td');
-        td.textContent = text; if (cls) td.className = cls;
-        tr.appendChild(td); return td;
-      }
-      cell(label(p));
-      cell(fmt(p.price) + ' / ' + p.unit);
+      var row = el('div', 'ci' + (String(id) === String(lastAdded) ? ' ci-new bump' : ''));
+      tint(row, p);
+      row.appendChild(el('div', 'ci-tile', initials(p)));
 
-      var qtyTd = document.createElement('td');
-      var grp = document.createElement('div'); grp.className = 'input-group input-group-sm';
-      var minus = document.createElement('button'); minus.type = 'button';
-      minus.className = 'btn btn-outline-secondary'; minus.textContent = '-';
+      var main = el('div', 'ci-main');
+      main.appendChild(el('div', 'ci-name', label(p)));
+      main.appendChild(el('div', 'ci-meta', fmt(p.price) + ' / ' + p.unit));
+
+      var line = el('div', 'ci-row');
+      var grp = el('div', 'stepper');
+      var minus = el('button'); minus.type = 'button'; minus.setAttribute('aria-label', 'Decrease'); minus.appendChild(icon('i-minus'));
       minus.addEventListener('click', function () { setQty(id, cart[id] - stepOf(p)); });
       var inp = document.createElement('input'); inp.type = 'number';
       inp.min = p.unit === 'meter' ? 0.01 : 1;
       inp.step = p.unit === 'meter' ? '0.01' : '1';
-      inp.className = 'form-control text-center'; inp.value = q;
+      inp.value = q;
       inp.addEventListener('change', function () {
         var v = parseFloat(inp.value) || 1;
         setQty(id, p.unit === 'pcs' ? Math.round(v) : v);
       });
-      var plus = document.createElement('button'); plus.type = 'button';
-      plus.className = 'btn btn-outline-secondary'; plus.textContent = '+';
+      var plus = el('button'); plus.type = 'button'; plus.setAttribute('aria-label', 'Increase'); plus.appendChild(icon('i-plus'));
       plus.addEventListener('click', function () { setQty(id, cart[id] + stepOf(p)); });
       grp.appendChild(minus); grp.appendChild(inp); grp.appendChild(plus);
-      qtyTd.appendChild(grp); tr.appendChild(qtyTd);
+      line.appendChild(grp);
+      line.appendChild(el('div', 'ci-amt', fmt(r2(p.price * q))));
+      main.appendChild(line);
+      row.appendChild(main);
 
-      cell(fmt(r2(p.price * q)), 'text-end');
-      var rm = document.createElement('button'); rm.type = 'button';
-      rm.className = 'btn btn-sm btn-outline-danger'; rm.textContent = 'Remove';
+      var rm = el('button', 'ci-x'); rm.type = 'button'; rm.setAttribute('aria-label', 'Remove'); rm.appendChild(icon('i-x'));
       rm.addEventListener('click', function () { setQty(id, 0); });
-      var rmTd = document.createElement('td'); rmTd.appendChild(rm); tr.appendChild(rmTd);
-      bodyEl.appendChild(tr);
+      row.appendChild(rm);
+      bodyEl.appendChild(row);
     });
+
+    PRODUCTS.forEach(function (p) {
+      var c = cards[p.id], q = cart[p.id];
+      c._qty.textContent = q ? '\u00D7' + q : '';
+      c._qty.classList.toggle('on', !!q);
+    });
+    lastAdded = null;
     updateSummary();
   }
 
   function updateSummary() {
     var t = totals();
-    document.getElementById('t-sub').textContent = fmt(t.subtotal);
-    document.getElementById('t-disc').textContent = fmt(t.discount);
-    document.getElementById('t-gst').textContent = fmt(t.gst);
-    document.getElementById('t-total').textContent = fmt(t.total);
+    var n = Object.keys(cart).length;
+    tween('t-sub', t.subtotal); tween('t-disc', t.discount); tween('t-gst', t.gst); tween('t-total', t.total);
+    tween('pay-total', t.total); tween('fab-total', t.total);
+    document.getElementById('cart-count').textContent = n;
+    document.getElementById('cart-count-label').textContent = n === 1 ? 'item' : 'items';
+    document.getElementById('fab-count').textContent = n;
+    document.getElementById('clear-cart').hidden = !n;
+    document.getElementById('cart-fab').classList.toggle('show', n > 0);
+    payBtn.classList.toggle('is-empty', !n);
     var received = parseFloat(receivedEl.value) || 0;
     document.getElementById('change').textContent = fmt(received > t.total ? r2(received - t.total) : 0);
     document.getElementById('cash-box').style.display = methodEl.value === 'cash' ? '' : 'none';
+    [].forEach.call(document.querySelectorAll('#pay-seg button'), function (b) {
+      b.classList.toggle('on', b.getAttribute('data-m') === methodEl.value);
+    });
   }
 
   discountEl.addEventListener('input', updateSummary);
   receivedEl.addEventListener('input', updateSummary);
   methodEl.addEventListener('change', updateSummary);
+  [].forEach.call(document.querySelectorAll('#pay-seg button'), function (b) {
+    b.addEventListener('click', function () { methodEl.value = b.getAttribute('data-m'); updateSummary(); });
+  });
+  document.getElementById('exact-btn').addEventListener('click', function () {
+    receivedEl.value = totals().total.toFixed(2);
+    updateSummary();
+  });
+  document.getElementById('clear-cart').addEventListener('click', function () { cart = {}; render(); });
+  document.getElementById('cart-fab').addEventListener('click', function () {
+    document.getElementById('cart-panel').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  });
 
   form.addEventListener('submit', function (e) {
     var ids = Object.keys(cart);
-    if (!ids.length) { e.preventDefault(); alert('Add at least one product.'); return; }
+    if (!ids.length) { e.preventDefault(); toast('Add at least one product.', true); return; }
     var t = totals();
     var received = parseFloat(receivedEl.value) || 0;
     if (methodEl.value === 'cash' && receivedEl.value !== '' && received < t.total) {
-      e.preventDefault(); alert('Cash received is less than the total.'); return;
+      e.preventDefault(); toast('Cash received is less than the total.', true); return;
     }
     document.getElementById('cart-field').value = JSON.stringify(
       ids.map(function (id) { return { id: Number(id), qty: cart[id] }; })
     );
-    document.getElementById('pay-btn').disabled = true;
+    payBtn.disabled = true;
   });
 
+  buildGrid();
   render();
 })();
 </script>

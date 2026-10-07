@@ -2,8 +2,11 @@
 {% block title %}Suppliers{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">Suppliers</h1>
-  <a class="btn btn-dark" href="{% url 'supplier_add' %}">Add supplier</a>
+  <div>
+    <h1 class="h4 mb-0">Suppliers</h1>
+    <p class="page-sub">People and companies you buy stock from</p>
+  </div>
+  <a class="btn btn-dark d-inline-flex align-items-center gap-1" href="{% url 'supplier_add' %}"><svg class="ic" style="width:15px;height:15px"><use href="#i-plus"/></svg>Add supplier</a>
 </div>
 <div class="table-responsive">
 <table class="table table-striped align-middle bg-white">

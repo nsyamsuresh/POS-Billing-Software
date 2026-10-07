@@ -2,13 +2,13 @@
 {% block title %}Bill {{ sale.bill_no }}{% endblock %}
 {% block extra_head %}
 <style>
-  .receipt { max-width: 340px; margin: 0 auto; background: #fff; padding: 16px; font-size: 14px; }
+  .receipt { max-width: 340px; margin: 0 auto; background: #fff; padding: 20px 18px; font-size: 14px; border-radius: 16px; box-shadow: var(--shadow); }
   .receipt table { width: 100%; }
   .receipt td, .receipt th { padding: 2px 0; vertical-align: top; }
   .receipt .r { text-align: right; }
   @media print {
     @page { margin: 6mm; }
-    .receipt { max-width: 100%; padding: 0; border: 0 !important; }
+    .receipt { max-width: 100%; padding: 0; border: 0 !important; box-shadow: none; border-radius: 0; }
   }
 </style>
 {% endblock %}

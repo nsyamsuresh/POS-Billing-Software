@@ -1,16 +1,190 @@
 {% extends 'base.html' %}
 {% block title %}Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+  .dash-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .dash-head p {
+    margin: 0;
+    color: var(--mute);
+    font-size: .85rem;
+  }
+
+  .dash-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* Dashboard statistic cards */
+  .stat {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 16px;
+    min-height: 100px;
+    padding: 18px 20px !important;
+  }
+
+  .stat-ic {
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+    border-radius: 13px;
+    display: grid;
+    place-items: center;
+    background: var(--soft);
+    color: var(--ink);
+  }
+
+  .stat-ic .ic {
+    width: 21px;
+    height: 21px;
+  }
+
+  .stat-ic.warn {
+    background: #fde8ec;
+    color: var(--bad);
+  }
+
+  .stat-content {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .stat .small {
+    line-height: 1.2;
+    margin-bottom: 5px;
+    color: var(--mute);
+  }
+
+  .stat .fs-3 {
+    line-height: 1;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .m-frame .dash-actions {
+    width: 100%;
+  }
+
+  .m-frame .dash-actions .btn {
+    flex: 1;
+  }
+
+  /* Low-stock section */
+  .low-stock-title {
+    margin-top: 4px;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  .low-stock-table {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  @media (max-width: 767px) {
+    .stat {
+      min-height: 90px;
+      padding: 15px !important;
+      gap: 12px;
+    }
+
+    .stat-ic {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+    }
+
+    .stat-ic .ic {
+      width: 19px;
+      height: 19px;
+    }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<h1 class="h4 mb-3">Dashboard</h1>
-<div class="row g-3 mb-4">
-  <div class="col-6 col-md-3"><div class="card card-body"><div class="text-muted small">Active products</div><div class="fs-3">{{ product_count }}</div></div></div>
-  <div class="col-6 col-md-3"><div class="card card-body"><div class="text-muted small">Suppliers</div><div class="fs-3">{{ supplier_count }}</div></div></div>
-  <div class="col-6 col-md-3"><div class="card card-body"><div class="text-muted small">Active staff</div><div class="fs-3">{{ staff_count }}</div></div></div>
-  <div class="col-6 col-md-3"><div class="card card-body"><div class="text-muted small">Low stock items</div><div class="fs-3 {% if low_stock_count %}text-danger{% endif %}">{{ low_stock_count }}</div></div></div>
+<div class="dash-head">
+  <div>
+    <h1 class="h4 mb-0">Dashboard</h1>
+    <p>A quick look at your store</p>
+  </div>
+  <div class="dash-actions">
+    <a class="btn btn-dark btn-sm d-inline-flex align-items-center justify-content-center gap-1" href="{% url 'pos' %}"><svg class="ic" style="width:15px;height:15px"><use href="#i-plus"/></svg>New bill</a>
+    <a class="btn btn-outline-dark btn-sm" href="{% url 'reports' %}">Reports</a>
+  </div>
 </div>
-<h2 class="h6">Low stock</h2>
-<div class="table-responsive">
-<table class="table bg-white">
+
+<div class="row g-3 mb-4">
+
+  <div class="col-6 col-md-3">
+    <div class="card card-body stat">
+      <span class="stat-ic">
+        <svg class="ic"><use href="#i-tag"/></svg>
+      </span>
+
+      <div class="stat-content">
+        <div class="text-muted small">Active products</div>
+        <div class="fs-3">{{ product_count }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="card card-body stat">
+      <span class="stat-ic">
+        <svg class="ic"><use href="#i-truck"/></svg>
+      </span>
+
+      <div class="stat-content">
+        <div class="text-muted small">Suppliers</div>
+        <div class="fs-3">{{ supplier_count }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="card card-body stat">
+      <span class="stat-ic">
+        <svg class="ic"><use href="#i-users"/></svg>
+      </span>
+
+      <div class="stat-content">
+        <div class="text-muted small">Active staff</div>
+        <div class="fs-3">{{ staff_count }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="card card-body stat">
+      <span class="stat-ic {% if low_stock_count %}warn{% endif %}">
+        <svg class="ic"><use href="#i-alert"/></svg>
+      </span>
+
+      <div class="stat-content">
+        <div class="text-muted small">Low stock</div>
+        <div class="fs-3 {% if low_stock_count %}text-danger{% endif %}">
+          {{ low_stock_count }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<h2 class="h6 low-stock-title">Low stock</h2>
+<div class="table-responsive low-stock-table">
+<table class="table bg-white mb-0">
   <thead><tr><th>Product</th><th>Stock</th><th>Alert level</th></tr></thead>
   <tbody>
   {% for p in low_stock %}

@@ -2,8 +2,11 @@
 {% block title %}Returns{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">Returns</h1>
-  <a class="btn btn-dark" href="{% url 'return_lookup' %}">New return</a>
+  <div>
+    <h1 class="h4 mb-0">Returns</h1>
+    <p class="page-sub">Items customers have sent back</p>
+  </div>
+  <a class="btn btn-dark d-inline-flex align-items-center gap-1" href="{% url 'return_lookup' %}"><svg class="ic" style="width:15px;height:15px"><use href="#i-plus"/></svg>New return</a>
 </div>
 <div class="table-responsive">
 <table class="table table-striped align-middle bg-white">

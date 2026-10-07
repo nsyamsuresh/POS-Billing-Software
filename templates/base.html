@@ -4,120 +4,320 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}POS Billing{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    .sidebar .nav-link { color: #333; border-radius: .375rem; }
-    .sidebar .nav-link:hover { background: #e9ecef; }
-    .sidebar .nav-link.active { background: #212529; color: #fff; }
+    /* ------------------------------------------------------------------
+       Design tokens
+    ------------------------------------------------------------------ */
+    :root {
+      --bg: #f2f3f5;
+      --card: #ffffff;
+      --ink: #0c0c0e;
+      --ink-2: #4a4a54;
+      --mute: #8a8a96;
+      --line: #e9e9ee;
+      --soft: #f5f5f7;
+      --tile: #eeeef1;
+      --ok: #15803d;
+      --bad: #dc2640;
+      --r: 16px;
+      --ease: cubic-bezier(.22, .8, .3, 1);
+      --shadow: 0 1px 2px rgba(16, 16, 24, .04), 0 8px 24px rgba(16, 16, 24, .05);
+      --top-h: 60px;
+      --tab-h: 64px;
+      --bs-body-font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      --bs-body-color: var(--ink);
+      --bs-border-color: var(--line);
+    }
+    body { font-family: var(--bs-body-font-family); color: var(--ink); -webkit-font-smoothing: antialiased; }
+    body.bg-light { background: var(--bg) !important; }
+    body.m-body { background: #d8dbe1; }
+    h1.h4, .h4 { font-weight: 650; letter-spacing: -.02em; }
+    h2.h6 { font-weight: 650; letter-spacing: -.01em; font-size: 1rem; }
+    .text-muted { color: var(--mute) !important; }
+    a { text-underline-offset: 3px; }
+    :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+    /* Inline icons (sprite below) */
+    .ic { width: 20px; height: 20px; flex: none; }
+
+    /* ------------------------------------------------------------------
+       Top bar (desktop)
+    ------------------------------------------------------------------ */
+    .topbar {
+      position: sticky; top: 0; z-index: 40; height: var(--top-h);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 0 18px; background: rgba(255, 255, 255, .88);
+      -webkit-backdrop-filter: saturate(1.4) blur(12px); backdrop-filter: saturate(1.4) blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none;
+             font-weight: 700; letter-spacing: -.02em; }
+    .brand:hover { color: var(--ink); }
+    .brand-mark { width: 34px; height: 34px; border-radius: 10px; background: var(--ink); color: #fff;
+                  display: grid; place-items: center; }
+    .brand-mark .ic { width: 18px; height: 18px; }
+    .topnav a { color: var(--ink-2); text-decoration: none; font-weight: 500; font-size: .9rem;
+                padding: .4rem .8rem; border-radius: 10px; transition: background .2s, color .2s; }
+    .topnav a:hover { background: var(--soft); color: var(--ink); }
+    .btn-ghost { border: 1px solid var(--line); background: #fff; color: var(--ink); font-weight: 500; }
+    .btn-ghost:hover { background: var(--soft); color: var(--ink); border-color: #d9d9e0; }
+    .chip-date { display: inline-flex; align-items: center; gap: 8px; padding: .4rem .8rem; font-size: .8rem;
+                 font-weight: 500; color: var(--ink-2); border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+    .chip-date .ic { width: 16px; height: 16px; }
+    .user-chip { display: flex; align-items: center; gap: 8px; padding: 3px 12px 3px 3px; border: 1px solid var(--line);
+                 border-radius: 999px; background: #fff; font-size: .8rem; font-weight: 500; }
+    .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: #fff; display: grid;
+              place-items: center; font-size: .75rem; font-weight: 600; text-transform: uppercase; }
+
+    /* ------------------------------------------------------------------
+       Sidebar rail
+    ------------------------------------------------------------------ */
+    .sidebar .nav-link { display: flex; align-items: center; gap: 12px; color: var(--ink-2); border-radius: 14px;
+                         padding: 10px 12px; font-weight: 500; font-size: .92rem;
+                         transition: background .2s, color .2s, box-shadow .2s; }
+    .sidebar .nav-link:hover { background: var(--soft); color: var(--ink); }
+    .sidebar .nav-link.active { background: var(--ink); color: #fff; box-shadow: 0 8px 16px rgba(0, 0, 0, .2); }
+    .sidebar .rail { width: 100%; }
     @media (min-width: 768px) {
-      .sidebar { width: 230px; flex: none; min-height: calc(100vh - 56px); }
+      .sidebar { flex: none; }
+      .sidebar .offcanvas-body { flex-grow: 1 !important; }
+      .sidebar .rail { position: sticky; top: var(--top-h); width: 88px; height: calc(100vh - var(--top-h));
+                       background: #fff; border-right: 1px solid var(--line); padding: 14px 8px; overflow-y: auto; }
+      .sidebar .nav-link { flex-direction: column; gap: 5px; padding: 10px 2px; font-size: .68rem;
+                           text-align: center; line-height: 1.15; }
+      .sidebar .nav-link .ic { width: 21px; height: 21px; }
     }
 
-    /* Mobile layout (served under /m/) */
-    body.m-body { background: #cfd6dc; }
-    .m-frame { max-width: 430px; min-height: 100vh; margin: 0 auto; background: #f8f9fa;
-               box-shadow: 0 0 24px rgba(0,0,0,.25); position: relative; }
-    .m-top { position: sticky; top: 0; z-index: 20; background: #212529; color: #fff;
-             padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
-    .m-top a.m-title { color: #fff; text-decoration: none; font-weight: 600; font-size: 1.1rem; }
-    .m-main { padding: 14px 14px 90px; min-width: 0; }
-    .m-tabs, .m-sheet { position: fixed; left: 50%; transform: translateX(-50%);
-                        width: 100%; max-width: 430px; background: #fff; }
-    .m-tabs { bottom: 0; z-index: 30; display: flex; border-top: 1px solid #dee2e6;
-              padding-bottom: env(safe-area-inset-bottom, 0px); }
-    .m-tabs a, .m-tabs button { flex: 1; text-align: center; padding: 14px 4px; font-size: .8rem;
-                                color: #555; text-decoration: none; background: none; border: 0; }
-    .m-tabs a.on { color: #fff; background: #212529; }
-    .m-sheet { bottom: 52px; z-index: 25; border-top: 1px solid #dee2e6; box-shadow: 0 -6px 16px rgba(0,0,0,.12); }
-    .m-sheet a { display: block; padding: 12px 18px; color: #212529; text-decoration: none; border-bottom: 1px solid #eee; }
+    /* ------------------------------------------------------------------
+       Page load: one soft reveal
+    ------------------------------------------------------------------ */
+    @keyframes reveal { from { opacity: 0; } to { opacity: 1; } }
+    main.page, .m-main { animation: reveal .4s ease-out both; }
+
+    /* ------------------------------------------------------------------
+       Cards, tables, forms, buttons (restyles Bootstrap globally)
+    ------------------------------------------------------------------ */
+    .card { border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); background: #fff; }
+    .card-body { padding: 1.1rem 1.25rem; }
+    .card-body > .text-muted.small { font-weight: 500; }
+    .card-body .fs-3, .card-body .fs-4 { font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+
+    .table { --bs-table-bg: transparent; --bs-table-striped-bg: #fafafb; margin-bottom: 0; font-variant-numeric: tabular-nums; }
+    .table > :not(caption) > * > * { padding: .8rem 1rem; border-bottom-color: var(--line); }
+    .table thead th { font-size: .78rem; font-weight: 600; color: var(--mute); background: #fafafb;
+                      border-bottom: 1px solid var(--line); white-space: nowrap; }
+    .table-striped > tbody > tr:hover > * { --bs-table-bg-state: #f2f2f5; }
+    .table-responsive { background: #fff; border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); }
+    .card .table-responsive { border: 0; box-shadow: none; border-radius: 0; background: transparent; }
+    .table tbody tr:last-child > * { border-bottom: 0; }
+
+    .form-control, .form-select { border: 1px solid var(--line); border-radius: 12px; background-color: #fff;
+                                  padding: .6rem .85rem; font-size: .92rem;
+                                  transition: border-color .15s, box-shadow .2s; }
+    .form-control:focus, .form-select:focus { border-color: var(--ink); box-shadow: 0 0 0 4px rgba(12, 12, 14, .08); }
+    .form-control-lg { padding: .8rem 1rem; font-size: 1rem; border-radius: 14px; }
+    .form-control-sm, .form-select-sm { border-radius: 10px; padding: .4rem .65rem; }
+    .form-label { font-size: .8rem; font-weight: 600; color: var(--ink-2); margin-bottom: .35rem; }
+    .form-text { color: var(--mute); }
+    .form-check-input:checked { background-color: var(--ink); border-color: var(--ink); }
+    /* Django-rendered fields that carry no bootstrap class */
+    form.card > .mb-3 > :is(input, select, textarea):not(.form-control):not(.form-select):not([type=checkbox]):not([type=radio]) {
+      display: block; width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: .6rem .85rem; font-size: .92rem;
+      background: #fff; transition: border-color .15s, box-shadow .2s; }
+    form.card > .mb-3 > :is(input, select, textarea):not(.form-control):not(.form-select):focus {
+      outline: 0; border-color: var(--ink); box-shadow: 0 0 0 4px rgba(12, 12, 14, .08); }
+
+    .btn { border-radius: 12px; font-weight: 600; font-size: .88rem; padding: .55rem 1rem;
+           transition: transform .15s var(--ease), box-shadow .2s, background-color .2s, color .2s, border-color .2s; }
+    .btn:active:not(:disabled) { transform: scale(.97); }
+    .btn-sm { border-radius: 10px; padding: .4rem .75rem; font-size: .8rem; }
+    .btn-lg { border-radius: 14px; padding: .85rem 1.2rem; font-size: 1rem; }
+    .btn-dark { --bs-btn-bg: #0c0c0e; --bs-btn-border-color: #0c0c0e; --bs-btn-hover-bg: #25252b;
+                --bs-btn-hover-border-color: #25252b; --bs-btn-active-bg: #000; --bs-btn-active-border-color: #000;
+                --bs-btn-disabled-bg: #0c0c0e; --bs-btn-disabled-border-color: #0c0c0e; }
+    .btn-dark:hover { box-shadow: 0 8px 18px rgba(0, 0, 0, .2); }
+    .btn-outline-dark { --bs-btn-color: var(--ink); --bs-btn-border-color: #d6d6de; --bs-btn-hover-bg: var(--ink);
+                        --bs-btn-hover-border-color: var(--ink); --bs-btn-active-bg: #000; --bs-btn-active-border-color: #000; }
+    .btn-outline-secondary { --bs-btn-color: var(--ink-2); --bs-btn-border-color: #d6d6de; --bs-btn-hover-bg: var(--soft);
+                             --bs-btn-hover-color: var(--ink); --bs-btn-hover-border-color: #c9c9d2;
+                             --bs-btn-active-bg: var(--soft); --bs-btn-active-color: var(--ink); --bs-btn-active-border-color: #c9c9d2; }
+    .btn-outline-danger { --bs-btn-color: var(--bad); --bs-btn-border-color: #f1c2cb; --bs-btn-hover-bg: var(--bad);
+                          --bs-btn-hover-border-color: var(--bad); --bs-btn-active-bg: var(--bad); --bs-btn-active-border-color: var(--bad); }
+    .btn-danger { --bs-btn-bg: var(--bad); --bs-btn-border-color: var(--bad); --bs-btn-hover-bg: #c01d36; --bs-btn-hover-border-color: #c01d36; }
+
+    .badge { border-radius: 999px; font-weight: 600; padding: .4em .7em; }
+    .badge.bg-danger { background: #fde8ec !important; color: #b81d36; }
+    .badge.bg-success { background: #dcf5e4 !important; color: #136c34; }
+    .badge.bg-secondary { background: #ececf0 !important; color: #5a5a66; }
+
+    .alert { border: 0; border-radius: 14px; box-shadow: var(--shadow); font-weight: 500; }
+    .alert.show { animation: alertIn .35s var(--ease); }
+    @keyframes alertIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+
+    .page-sub { margin: 2px 0 0; color: var(--mute); font-size: .85rem; }
+    form.toolbar { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 10px 6px; margin-left: 0; margin-right: 0; box-shadow: var(--shadow); }
+    .icon-chip { width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; background: var(--soft); color: var(--ink); }
+    .icon-chip.warn { background: #fde8ec; color: var(--bad); }
+    .confirm-card { max-width: 460px; }
+    .offcanvas { border: 0; }
+    .modal-content { border: 0; border-radius: 20px; box-shadow: 0 20px 60px rgba(16, 16, 24, .25); }
+    .modal.fade .modal-dialog { transform: scale(.96) translateY(10px); transition: transform .25s var(--ease); }
+    .modal.show .modal-dialog { transform: none; }
+
+    /* ------------------------------------------------------------------
+       Mobile shell (served under /m/)
+    ------------------------------------------------------------------ */
+    .m-frame { max-width: 430px; min-height: 100vh; margin: 0 auto; background: var(--bg);
+               box-shadow: 0 0 40px rgba(0, 0, 0, .18); position: relative; }
+    .m-top { position: sticky; top: 0; z-index: 20; background: rgba(255, 255, 255, .9);
+             -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-bottom: 1px solid var(--line);
+             color: var(--ink); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
+    .m-top a.m-title { color: var(--ink); text-decoration: none; font-weight: 700; font-size: 1.05rem;
+                       letter-spacing: -.02em; display: flex; align-items: center; gap: 9px; }
+    .m-main { padding: 14px 14px 150px; min-width: 0; }
+    .m-tabs, .m-sheet { position: fixed; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: #fff; }
+    .m-tabs { bottom: 0; z-index: 30; display: flex; gap: 4px; border-top: 1px solid var(--line);
+              padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px)); min-height: var(--tab-h); }
+    .m-tabs a, .m-tabs button { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+                                padding: 7px 2px; font-size: .68rem; font-weight: 600; color: var(--mute); text-decoration: none;
+                                background: none; border: 0; border-radius: 14px; transition: background .2s, color .2s; }
+    .m-tabs a .ic, .m-tabs button .ic { width: 21px; height: 21px; }
+    .m-tabs a.on { color: #fff; background: var(--ink); }
+    .m-sheet { bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px)); z-index: 25; border-radius: 20px 20px 0 0;
+               box-shadow: 0 -10px 30px rgba(16, 16, 24, .14); overflow: hidden; }
+    .m-sheet a { display: flex; align-items: center; gap: 12px; padding: 14px 20px; color: var(--ink); text-decoration: none;
+                 font-weight: 500; border-bottom: 1px solid var(--line); }
+    .m-sheet a:last-child { border-bottom: 0; }
+    .m-sheet a:active { background: var(--soft); }
     /* stack columns even when the browser window is wide */
     .m-frame .row > [class*="col-md-"], .m-frame .row > [class*="col-lg-"] { flex: 0 0 100%; max-width: 100%; width: 100%; }
+    .m-frame .row > .col-6 { flex: 0 0 50%; max-width: 50%; width: 50%; }
+    .m-frame .table-responsive { background: none; border: 0; box-shadow: none; border-radius: 0; }
     /* tables become cards */
     .m-cards table.table, .m-cards table.table > tbody, .m-cards table.table > tbody > tr,
     .m-cards table.table > tbody > tr > td { display: block; width: 100%; }
     .m-cards table.table > thead { display: none; }
-    .m-cards table.table > tbody > tr { background: #fff; border: 1px solid #dee2e6; border-radius: 10px;
-                                        margin-bottom: 10px; padding: 6px 12px; }
+    .m-cards table.table > tbody > tr { background: #fff; border: 1px solid var(--line); border-radius: 14px;
+                                        margin-bottom: 10px; padding: 8px 14px; box-shadow: var(--shadow); }
     .m-cards table.table > tbody > tr > td { border: 0; padding: 4px 0; display: flex; justify-content: space-between;
-                                             align-items: center; gap: 12px; text-align: right;
-                                             box-shadow: none; background: transparent; }
-    .m-cards table.table > tbody > tr > td::before { content: attr(data-label); font-weight: 600; color: #6c757d; text-align: left; }
+                                             align-items: center; gap: 12px; text-align: right; box-shadow: none; background: transparent; }
+    .m-cards table.table > tbody > tr > td::before { content: attr(data-label); font-weight: 600; color: var(--mute);
+                                                     text-align: left; font-size: .8rem; }
 
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }
+    }
     @media print {
       .no-print { display: none !important; }
       body { background: #fff !important; }
-      main, .m-main { padding: 0 !important; }
-      .m-frame { box-shadow: none; max-width: 100%; }
+      main, .m-main { padding: 0 !important; animation: none; }
+      .m-frame { box-shadow: none; max-width: 100%; background: #fff; }
     }
   </style>
   {% block extra_head %}{% endblock %}
 </head>
 <body class="{% if request.is_mobile %}m-body{% else %}bg-light{% endif %}">
+
+<!-- Icon sprite (inline SVG, no image files needed) -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></symbol>
+  <symbol id="i-cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></symbol>
+  <symbol id="i-receipt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".6" fill="currentColor"/></symbol>
+  <symbol id="i-truck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 8v8M12 8v8M16 8v8"/></symbol>
+</svg>
+
 {% with page=request.resolver_match.url_name|default:'' %}
 
 {% if request.is_mobile %}
 <div class="m-frame m-cards">
   <header class="m-top no-print">
-    <a class="m-title" href="{% url 'home' %}">POS Billing</a>
+    <a class="m-title" href="{% url 'home' %}"><span class="brand-mark" style="width:30px;height:30px;border-radius:9px"><svg class="ic"><use href="#i-grid"/></svg></span>POS Billing</a>
     <div class="d-flex align-items-center gap-2">
-      <a class="btn btn-outline-light btn-sm" href="/">Desktop</a>
+      <a class="btn btn-ghost btn-sm d-inline-flex align-items-center gap-1" href="/"><svg class="ic" style="width:15px;height:15px"><use href="#i-monitor"/></svg>Desktop</a>
       <form method="post" action="{% url 'logout' %}" class="m-0">{% csrf_token %}
-        <button class="btn btn-outline-light btn-sm">Log out</button>
+        <button class="btn btn-ghost btn-sm">Log out</button>
       </form>
     </div>
   </header>
   <main class="m-main">
 {% else %}
-<nav class="navbar navbar-dark bg-dark no-print">
-  <div class="container-fluid">
-    <div class="d-flex align-items-center gap-2">
-      {% if user.is_authenticated and user.is_admin_role %}
-      <button class="btn btn-outline-light btn-sm d-md-none" type="button"
-              data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar"
-              aria-label="Open menu">&#9776;</button>
-      {% endif %}
-      <a class="navbar-brand m-0" href="{% url 'home' %}">POS Billing</a>
-      {% if user.is_authenticated and not user.is_admin_role %}
-      <a class="nav-link text-white-50 px-2" href="{% url 'pos' %}">New bill</a>
-      <a class="nav-link text-white-50 px-2" href="{% url 'sale_list' %}">My bills</a>
-      {% endif %}
-    </div>
-    {% if user.is_authenticated %}
-    <div class="d-flex align-items-center gap-3">
-      <a class="btn btn-outline-light btn-sm" href="/m/">Mobile view</a>
-      <span class="text-white-50 small d-none d-sm-inline">{{ user.username }} ({{ user.get_role_display }})</span>
-      <form method="post" action="{% url 'logout' %}" class="m-0">{% csrf_token %}
-        <button class="btn btn-outline-light btn-sm">Log out</button>
-      </form>
-    </div>
+<header class="topbar no-print">
+  <div class="d-flex align-items-center gap-2">
+    {% if user.is_authenticated and user.is_admin_role %}
+    <button class="btn btn-ghost btn-sm d-md-none px-2" type="button"
+            data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar"
+            aria-label="Open menu"><svg class="ic"><use href="#i-menu"/></svg></button>
+    {% endif %}
+    <a class="brand" href="{% url 'home' %}"><span class="brand-mark"><svg class="ic"><use href="#i-grid"/></svg></span><span>POS Billing</span></a>
+    {% if user.is_authenticated and not user.is_admin_role %}
+    <nav class="topnav d-flex ms-3">
+      <a href="{% url 'pos' %}">New bill</a>
+      <a href="{% url 'sale_list' %}">My bills</a>
+    </nav>
     {% endif %}
   </div>
-</nav>
+  {% if user.is_authenticated %}
+  <div class="d-flex align-items-center gap-2">
+    <span class="chip-date d-none d-lg-inline-flex"><svg class="ic"><use href="#i-calendar"/></svg><span id="today"></span></span>
+    <a class="btn btn-ghost btn-sm d-inline-flex align-items-center gap-1" href="/m/"><svg class="ic" style="width:15px;height:15px"><use href="#i-phone"/></svg><span class="d-none d-sm-inline">Mobile view</span></a>
+    <span class="user-chip d-none d-sm-flex"><span class="avatar">{{ user.username|slice:":1" }}</span>{{ user.username }}</span>
+    <form method="post" action="{% url 'logout' %}" class="m-0">{% csrf_token %}
+      <button class="btn btn-ghost btn-sm d-inline-flex align-items-center gap-1"><svg class="ic" style="width:15px;height:15px"><use href="#i-logout"/></svg><span class="d-none d-sm-inline">Log out</span></button>
+    </form>
+  </div>
+  {% endif %}
+</header>
 <div class="d-flex">
   {% if user.is_authenticated and user.is_admin_role %}
-  <aside class="offcanvas-md offcanvas-start bg-white border-end sidebar no-print"
+  <aside class="offcanvas-md offcanvas-start sidebar no-print"
          tabindex="-1" id="sidebar" style="--bs-offcanvas-width: 260px;">
     <div class="offcanvas-header d-md-none">
       <h5 class="offcanvas-title">Menu</h5>
       <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
     </div>
-    <div class="offcanvas-body p-3">
+    <div class="offcanvas-body p-3 p-md-0">
+      <div class="rail">
       <ul class="nav flex-column gap-1 w-100">
-        <li class="nav-item"><a class="nav-link {% if page == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Dashboard</a></li>
-        <li class="nav-item"><a class="nav-link {% if page == 'pos' %}active{% endif %}" href="{% url 'pos' %}">Billing</a></li>
-        <li class="nav-item"><a class="nav-link {% if page == 'sale_list' or page == 'receipt' %}active{% endif %}" href="{% url 'sale_list' %}">Bills</a></li>
-        <li class="nav-item"><a class="nav-link {% if 'return' in page %}active{% endif %}" href="{% url 'return_list' %}">Returns</a></li>
-        <li class="nav-item"><a class="nav-link {% if 'product' in page %}active{% endif %}" href="{% url 'product_list' %}">Products</a></li>
-        <li class="nav-item"><a class="nav-link {% if 'supplier' in page %}active{% endif %}" href="{% url 'supplier_list' %}">Suppliers</a></li>
-        <li class="nav-item"><a class="nav-link {% if 'purchase' in page %}active{% endif %}" href="{% url 'purchase_list' %}">Purchases</a></li>
-        <li class="nav-item"><a class="nav-link {% if page == 'ledger' %}active{% endif %}" href="{% url 'ledger' %}">Ledger</a></li>
-        <li class="nav-item"><a class="nav-link {% if page == 'reports' %}active{% endif %}" href="{% url 'reports' %}">Reports</a></li>
-        <li class="nav-item"><a class="nav-link {% if 'staff' in page %}active{% endif %}" href="{% url 'staff_list' %}">Staff</a></li>
+        <li class="nav-item"><a class="nav-link {% if page == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}"><svg class="ic"><use href="#i-grid"/></svg><span>Dashboard</span></a></li>
+        <li class="nav-item"><a class="nav-link {% if page == 'pos' %}active{% endif %}" href="{% url 'pos' %}"><svg class="ic"><use href="#i-cart"/></svg><span>Billing</span></a></li>
+        <li class="nav-item"><a class="nav-link {% if page == 'sale_list' or page == 'receipt' %}active{% endif %}" href="{% url 'sale_list' %}"><svg class="ic"><use href="#i-receipt"/></svg><span>Bills</span></a></li>
+        <li class="nav-item"><a class="nav-link {% if 'return' in page %}active{% endif %}" href="{% url 'return_list' %}"><svg class="ic"><use href="#i-undo"/></svg><span>Returns</span></a></li>
+        <li class="nav-item"><a class="nav-link {% if 'product' in page %}active{% endif %}" href="{% url 'product_list' %}"><svg class="ic"><use href="#i-tag"/></svg><span>Products</span></a></li>
+        <li class="nav-item"><a class="nav-link {% if 'supplier' in page %}active{% endif %}" href="{% url 'supplier_list' %}"><svg class="ic"><use href="#i-truck"/></svg><span>Suppliers</span></a></li>
+        <li class="nav-item"><a class="nav-link {% if 'purchase' in page %}active{% endif %}" href="{% url 'purchase_list' %}"><svg class="ic"><use href="#i-bag"/></svg><span>Purchases</span></a></li>
+        <li class="nav-item"><a class="nav-link {% if page == 'ledger' %}active{% endif %}" href="{% url 'ledger' %}"><svg class="ic"><use href="#i-book"/></svg><span>Ledger</span></a></li>
+        <li class="nav-item"><a class="nav-link {% if page == 'reports' %}active{% endif %}" href="{% url 'reports' %}"><svg class="ic"><use href="#i-chart"/></svg><span>Reports</span></a></li>
+        <li class="nav-item"><a class="nav-link {% if 'staff' in page %}active{% endif %}" href="{% url 'staff_list' %}"><svg class="ic"><use href="#i-users"/></svg><span>Staff</span></a></li>
       </ul>
+      </div>
     </div>
   </aside>
   {% endif %}
-  <main class="flex-grow-1 p-3 p-md-4" style="min-width:0">
+  <main class="page flex-grow-1 p-3 p-md-4" style="min-width:0">
 {% endif %}
 
     {% for m in messages %}
@@ -132,24 +332,24 @@
 
   {% if user.is_admin_role %}
   <div class="collapse m-sheet no-print" id="m-more">
-    <a href="{% url 'sale_list' %}">Bills</a>
-    <a href="{% url 'return_list' %}">Returns</a>
-    <a href="{% url 'supplier_list' %}">Suppliers</a>
-    <a href="{% url 'purchase_list' %}">Purchases</a>
-    <a href="{% url 'ledger' %}">Ledger</a>
-    <a href="{% url 'staff_list' %}">Staff</a>
+    <a href="{% url 'sale_list' %}"><svg class="ic"><use href="#i-receipt"/></svg>Bills</a>
+    <a href="{% url 'return_list' %}"><svg class="ic"><use href="#i-undo"/></svg>Returns</a>
+    <a href="{% url 'supplier_list' %}"><svg class="ic"><use href="#i-truck"/></svg>Suppliers</a>
+    <a href="{% url 'purchase_list' %}"><svg class="ic"><use href="#i-bag"/></svg>Purchases</a>
+    <a href="{% url 'ledger' %}"><svg class="ic"><use href="#i-book"/></svg>Ledger</a>
+    <a href="{% url 'staff_list' %}"><svg class="ic"><use href="#i-users"/></svg>Staff</a>
   </div>
   <nav class="m-tabs no-print">
-    <a class="{% if page == 'dashboard' %}on{% endif %}" href="{% url 'dashboard' %}">Home</a>
-    <a class="{% if page == 'pos' %}on{% endif %}" href="{% url 'pos' %}">Billing</a>
-    <a class="{% if 'product' in page %}on{% endif %}" href="{% url 'product_list' %}">Products</a>
-    <a class="{% if page == 'reports' %}on{% endif %}" href="{% url 'reports' %}">Reports</a>
-    <button type="button" data-bs-toggle="collapse" data-bs-target="#m-more">More</button>
+    <a class="{% if page == 'dashboard' %}on{% endif %}" href="{% url 'dashboard' %}"><svg class="ic"><use href="#i-home"/></svg>Home</a>
+    <a class="{% if page == 'pos' %}on{% endif %}" href="{% url 'pos' %}"><svg class="ic"><use href="#i-cart"/></svg>Billing</a>
+    <a class="{% if 'product' in page %}on{% endif %}" href="{% url 'product_list' %}"><svg class="ic"><use href="#i-tag"/></svg>Products</a>
+    <a class="{% if page == 'reports' %}on{% endif %}" href="{% url 'reports' %}"><svg class="ic"><use href="#i-chart"/></svg>Reports</a>
+    <button type="button" data-bs-toggle="collapse" data-bs-target="#m-more"><svg class="ic"><use href="#i-more"/></svg>More</button>
   </nav>
   {% else %}
   <nav class="m-tabs no-print">
-    <a class="{% if page == 'pos' %}on{% endif %}" href="{% url 'pos' %}">New bill</a>
-    <a class="{% if page == 'sale_list' or page == 'receipt' %}on{% endif %}" href="{% url 'sale_list' %}">My bills</a>
+    <a class="{% if page == 'pos' %}on{% endif %}" href="{% url 'pos' %}"><svg class="ic"><use href="#i-cart"/></svg>New bill</a>
+    <a class="{% if page == 'sale_list' or page == 'receipt' %}on{% endif %}" href="{% url 'sale_list' %}"><svg class="ic"><use href="#i-receipt"/></svg>My bills</a>
   </nav>
   {% endif %}
 </div>
@@ -172,6 +372,33 @@ document.querySelectorAll('table.table').forEach(function (t) {
 });
 </script>
 {% endif %}
+<script>
+/* Small UI touches: today's date + number count-up on stat cards */
+(function () {
+  var d = document.getElementById('today');
+  if (d) d.textContent = new Date().toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.querySelectorAll('.card-body .fs-3, .card-body .fs-4').forEach(function (el) {
+    var original = el.textContent.trim();
+    var m = original.match(/^(\D*?)(\d[\d,]*\.?\d*)(\D*)$/);
+    if (!m) return;
+    var target = parseFloat(m[2].replace(/,/g, ''));
+    if (!isFinite(target) || target === 0) return;
+    var dec = (m[2].split('.')[1] || '').length;
+    var start = null, dur = 700;
+    function step(ts) {
+      if (start === null) start = ts;
+      var p = Math.min((ts - start) / dur, 1);
+      var eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = m[1] + (target * eased).toFixed(dec) + m[3];
+      if (p < 1) requestAnimationFrame(step); else el.textContent = original;
+    }
+    el.textContent = m[1] + (0).toFixed(dec) + m[3];
+    requestAnimationFrame(step);
+  });
+})();
+</script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

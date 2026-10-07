@@ -1,8 +1,9 @@
 {% extends 'base.html' %}
 {% block title %}Ledger{% endblock %}
 {% block content %}
-<h1 class="h4 mb-3">Ledger</h1>
-<form class="row g-2 mb-3" method="get">
+<h1 class="h4 mb-1">Ledger</h1>
+<p class="page-sub mb-3">Money coming in and going out</p>
+<form class="row g-2 mb-3 toolbar" method="get">
   <div class="col-md-3"><select class="form-select" name="kind">
     <option value="">All types</option>
     {% for value, label in kinds %}<option value="{{ value }}" {% if kind == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
@@ -12,9 +13,9 @@
   <div class="col-auto"><button class="btn btn-outline-dark">Filter</button></div>
 </form>
 <div class="row g-3 mb-3">
-  <div class="col-md-4"><div class="card card-body"><div class="text-muted small">Money in</div><div class="fs-4 text-success">₹{{ totals.inflow|default:"0.00" }}</div></div></div>
-  <div class="col-md-4"><div class="card card-body"><div class="text-muted small">Money out</div><div class="fs-4 text-danger">₹{{ totals.outflow|default:"0.00" }}</div></div></div>
-  <div class="col-md-4"><div class="card card-body"><div class="text-muted small">Net</div><div class="fs-4">₹{{ totals.net|default:"0.00" }}</div></div></div>
+  <div class="col-md-4"><div class="card card-body"><div class="text-muted small">Money in</div><div class="fs-4 text-success">₹{{ totals.inflow|default:"0"|floatformat:2 }}</div></div></div>
+  <div class="col-md-4"><div class="card card-body"><div class="text-muted small">Money out</div><div class="fs-4 text-danger">₹{{ totals.outflow|default:"0"|floatformat:2 }}</div></div></div>
+  <div class="col-md-4"><div class="card card-body"><div class="text-muted small">Net</div><div class="fs-4">₹{{ totals.net|default:"0"|floatformat:2 }}</div></div></div>
 </div>
 <div class="table-responsive">
 <table class="table table-striped align-middle bg-white">

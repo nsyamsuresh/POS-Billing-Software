@@ -1,61 +1,312 @@
 {% extends 'base.html' %}
 {% block title %}Reports{% endblock %}
+
+{% block extra_head %}
+<style>
+  .rp-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 1rem; }
+  .rp-head p { margin: 2px 0 0; color: var(--mute); font-size: .85rem; }
+
+  /* period picker */
+  .period { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+  .period label { font-size: .72rem; font-weight: 600; color: var(--mute); display: flex; flex-direction: column; gap: 3px; }
+  .period .form-control { padding: .45rem .7rem; font-size: .85rem; }
+  .quick { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 1rem; }
+  .quick button { border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: .32rem .85rem; font-size: .78rem;
+                  font-weight: 600; color: var(--ink-2); transition: background .2s, color .2s, border-color .2s; }
+  .quick button:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+  /* net sales: styled like a hang tag, with a stitched edge */
+  .hero { position: relative; overflow: hidden; background: var(--ink); color: #fff; border: 0; padding: 1.6rem 1.5rem 1.4rem !important; height: 100%; }
+  .hero::before { content: ''; position: absolute; top: 18px; right: 22px; width: 14px; height: 14px; border-radius: 50%;
+                  background: var(--bg); box-shadow: inset 0 1px 3px rgba(0, 0, 0, .55); }
+  .hero::after { content: ''; position: absolute; inset: 8px; border: 1.5px dashed rgba(255, 255, 255, .2); border-radius: 12px; pointer-events: none; }
+  .hero-label { font-size: .82rem; font-weight: 600; color: rgba(255, 255, 255, .6); }
+  .hero-num { font-size: clamp(2.2rem, 5vw, 3rem); font-weight: 700; letter-spacing: -.04em; line-height: 1.1; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+  .hero-sub { font-size: .8rem; color: rgba(255, 255, 255, .55); }
+  .split { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: rgba(255, 255, 255, .14); margin: 18px 0 8px; }
+  .split i { display: block; height: 100%; transform-origin: left; animation: fillx .8s var(--ease) backwards; }
+  .split .keep { background: rgba(255, 255, 255, .92); }
+  .split .ref { background: #ff6b81; }
+  .split-note { font-size: .78rem; color: rgba(255, 255, 255, .7); }
+  .split[hidden] { display: none; }
+
+  .tile { display: flex; flex-direction: row; align-items: center; gap: 12px; height: 100%; }
+  .tile .chip-ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--soft); color: var(--ink); flex: none; }
+  .tile .chip-ic .ic { width: 19px; height: 19px; }
+  .tile .chip-ic.bad { background: #fde8ec; color: var(--bad); }
+  .tile .lbl { font-size: .78rem; color: var(--mute); font-weight: 500; line-height: 1.2; }
+  .tile-num { font-size: 1.35rem; font-weight: 650; letter-spacing: -.025em; font-variant-numeric: tabular-nums; line-height: 1.2; }
+  .tile-num.bad { color: var(--bad); }
+
+  /* daily chart */
+  .chart { display: flex; align-items: stretch; gap: 6px; height: 190px; overflow-x: auto; padding-top: 26px; }
+  .cb { position: relative; flex: 1 0 26px; display: flex; flex-direction: column; align-items: center; min-width: 0; }
+  .cslot { flex: 1; width: 100%; display: flex; align-items: flex-end; }
+  .cslot i { display: block; width: 100%; border-radius: 8px 8px 3px 3px; background: #dcdce3; transform-origin: bottom;
+             animation: growy .7s var(--ease) backwards; transition: background .2s; }
+  .cb.peak .cslot i, .cb:hover .cslot i { background: var(--ink); }
+  .clab { font-size: .68rem; color: var(--mute); margin-top: 6px; white-space: nowrap; font-weight: 500; }
+  .tip { position: absolute; bottom: calc(100% - 6px); left: 50%; translate: -50% 0; background: var(--ink); color: #fff; font-size: .72rem;
+         font-weight: 500; padding: 5px 9px; border-radius: 8px; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 3; }
+  .cb:hover .tip { opacity: 1; }
+  .chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  @keyframes growy { from { transform: scaleY(0); } }
+  @keyframes fillx { from { transform: scaleX(0); } }
+
+  /* inline meters in tables */
+  .mbar { display: block; height: 5px; border-radius: 99px; background: var(--soft); margin-top: 7px; max-width: 220px; overflow: hidden; }
+  .mbar i { display: block; height: 100%; background: var(--ink); border-radius: 99px; transform-origin: left; animation: fillx .8s var(--ease) backwards; }
+  .mbar.red i { background: var(--bad); }
+  .mbar.green i { background: var(--ok); }
+  .m-cards .mbar { margin-left: auto; }
+  .mnote { display: block; font-size: .72rem; color: var(--mute); margin-top: 3px; }
+  .rk { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 7px; background: var(--soft); color: var(--ink-2);
+        font-size: .72rem; font-weight: 700; margin-right: 8px; vertical-align: 1px; }
+  .rk.top { background: var(--ink); color: #fff; }
+  .rp-sec { margin: 1.8rem 0 .6rem; }
+  .rp-sec small { display: block; color: var(--mute); font-weight: 400; font-size: .8rem; margin-top: 1px; }
+</style>
+{% endblock %}
+
 {% block content %}
-<h1 class="h4 mb-3">Reports</h1>
-<form class="row g-2 mb-3" method="get">
-  <div class="col-auto"><input class="form-control" type="date" name="from" value="{{ start|date:'Y-m-d' }}"></div>
-  <div class="col-auto"><input class="form-control" type="date" name="to" value="{{ end|date:'Y-m-d' }}"></div>
-  <div class="col-auto"><button class="btn btn-outline-dark">Apply</button></div>
-</form>
+<div class="rp-head">
+  <div>
+    <h1 class="h4 mb-0">Reports</h1>
+    <p>Sales, refunds and stock for the period you pick</p>
+  </div>
+  <form class="period" method="get" id="period-form">
+    <label>From<input class="form-control" type="date" name="from" value="{{ start|date:'Y-m-d' }}"></label>
+    <label>To<input class="form-control" type="date" name="to" value="{{ end|date:'Y-m-d' }}"></label>
+    <button class="btn btn-dark">Apply</button>
+  </form>
+</div>
+<div class="quick no-print" id="quick">
+  <button type="button" data-r="today">Today</button>
+  <button type="button" data-r="7">Last 7 days</button>
+  <button type="button" data-r="30">Last 30 days</button>
+  <button type="button" data-r="month">This month</button>
+</div>
 
 <div class="row g-3 mb-4">
-  <div class="col-6 col-md-3"><div class="card card-body"><div class="text-muted small">Bills</div><div class="fs-4">{{ summary.bills }}</div></div></div>
-  <div class="col-6 col-md-3"><div class="card card-body"><div class="text-muted small">Sales</div><div class="fs-4">₹{{ summary.total|default:"0.00" }}</div></div></div>
-  <div class="col-6 col-md-3"><div class="card card-body"><div class="text-muted small">Refunds</div><div class="fs-4 text-danger">₹{{ refunds }}</div></div></div>
-  <div class="col-6 col-md-3"><div class="card card-body"><div class="text-muted small">Net sales</div><div class="fs-4">₹{{ net }}</div></div></div>
+  <div class="col-lg-4">
+    <div class="card card-body hero">
+      <div class="hero-label">Net sales</div>
+      <div class="hero-num count" data-kind="money">₹{{ net|default:"0"|floatformat:"-2" }}</div>
+      <div class="hero-sub">Sales minus refunds</div>
+      <div class="split" id="split" hidden><i class="keep" id="split-keep"></i><i class="ref" id="split-ref"></i></div>
+      <div class="split-note" id="split-note"></div>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="row g-3 h-100">
+      <div class="col-6 col-xl-4"><div class="card card-body tile"><span class="chip-ic"><svg class="ic"><use href="#i-receipt"/></svg></span><div><div class="lbl">Bills</div><div class="tile-num count" data-kind="int" id="v-bills">{{ summary.bills|default:0 }}</div></div></div></div>
+      <div class="col-6 col-xl-4"><div class="card card-body tile"><span class="chip-ic"><svg class="ic"><use href="#i-cart"/></svg></span><div><div class="lbl">Sales</div><div class="tile-num count" data-kind="money" id="v-sales">₹{{ summary.total|default:"0"|floatformat:"-2" }}</div></div></div></div>
+      <div class="col-6 col-xl-4"><div class="card card-body tile"><span class="chip-ic bad"><svg class="ic"><use href="#i-undo"/></svg></span><div><div class="lbl">Refunds</div><div class="tile-num bad count" data-kind="money" id="v-refunds">₹{{ refunds|default:"0"|floatformat:"-2" }}</div></div></div></div>
+      <div class="col-6 col-xl-4"><div class="card card-body tile"><span class="chip-ic"><svg class="ic"><use href="#i-chart"/></svg></span><div><div class="lbl">Average bill</div><div class="tile-num count" data-kind="money" id="v-avg">₹0</div></div></div></div>
+      <div class="col-6 col-xl-4"><div class="card card-body tile"><span class="chip-ic"><svg class="ic"><use href="#i-book"/></svg></span><div><div class="lbl">GST collected</div><div class="tile-num count" data-kind="money">₹{{ summary.gst|default:"0"|floatformat:"-2" }}</div></div></div></div>
+      <div class="col-6 col-xl-4"><div class="card card-body tile"><span class="chip-ic"><svg class="ic"><use href="#i-tag"/></svg></span><div><div class="lbl">Discounts given</div><div class="tile-num count" data-kind="money">₹{{ summary.discount|default:"0"|floatformat:"-2" }}</div></div></div></div>
+    </div>
+  </div>
 </div>
-<p class="text-muted small">GST collected in this period: ₹{{ summary.gst|default:"0.00" }} | Discounts given: ₹{{ summary.discount|default:"0.00" }}</p>
 
-<h2 class="h6 mt-4">Daily sales</h2>
-<div class="table-responsive"><table class="table table-striped bg-white">
+<div class="card card-body mb-3" id="chart-card" hidden>
+  <div class="chart-head">
+    <span class="fw-semibold">Sales per day</span>
+    <span class="text-muted small" id="chart-peak"></span>
+  </div>
+  <div class="chart" id="daily-chart"></div>
+</div>
+
+<h2 class="h6 rp-sec">Daily sales<small>Exact figures for each day</small></h2>
+<div class="table-responsive"><table class="table table-striped bg-white" id="tbl-daily">
   <thead><tr><th>Date</th><th>Bills</th><th class="text-end">Total</th></tr></thead>
   <tbody>
-  {% for d in daily %}<tr><td>{{ d.day|date:"d M Y" }}</td><td>{{ d.bills }}</td><td class="text-end">₹{{ d.total }}</td></tr>
+  {% for d in daily %}<tr><td>{{ d.day|date:"d M Y" }}</td><td>{{ d.bills }}</td><td class="text-end money">₹{{ d.total|floatformat:"-2" }}</td></tr>
   {% empty %}<tr><td colspan="3" class="text-muted text-center py-3">No sales in this period.</td></tr>{% endfor %}
   </tbody></table></div>
 
-<h2 class="h6 mt-4">Sales by staff</h2>
-<div class="table-responsive"><table class="table table-striped bg-white">
+<h2 class="h6 rp-sec">Sales by staff<small>Who rang up what</small></h2>
+<div class="table-responsive"><table class="table table-striped bg-white" id="tbl-staff">
   <thead><tr><th>Staff</th><th>Bills</th><th class="text-end">Total</th></tr></thead>
   <tbody>
-  {% for s in by_staff %}<tr><td>{{ s.staff__username }}</td><td>{{ s.bills }}</td><td class="text-end">₹{{ s.total }}</td></tr>
+  {% for s in by_staff %}<tr><td>{{ s.staff__username }}</td><td>{{ s.bills }}</td><td class="text-end money">₹{{ s.total|floatformat:"-2" }}</td></tr>
   {% empty %}<tr><td colspan="3" class="text-muted text-center py-3">No sales in this period.</td></tr>{% endfor %}
   </tbody></table></div>
 
-<h2 class="h6 mt-4">Top products</h2>
-<div class="table-responsive"><table class="table table-striped bg-white">
+<h2 class="h6 rp-sec">Top products<small>Ranked by revenue</small></h2>
+<div class="table-responsive"><table class="table table-striped bg-white" id="tbl-top">
   <thead><tr><th>Product</th><th>Quantity sold</th><th class="text-end">Revenue</th></tr></thead>
   <tbody>
   {% for p in top_products %}<tr>
     <td>{{ p.product__name }}{% if p.product__size %} {{ p.product__size }}{% endif %}{% if p.product__color %} {{ p.product__color }}{% endif %}</td>
-    <td>{{ p.qty|floatformat:"-2" }} {{ p.product__unit }}</td><td class="text-end">₹{{ p.revenue }}</td></tr>
+    <td>{{ p.qty|floatformat:"-2" }} {{ p.product__unit }}</td><td class="text-end money">₹{{ p.revenue|floatformat:"-2" }}</td></tr>
   {% empty %}<tr><td colspan="3" class="text-muted text-center py-3">No sales in this period.</td></tr>{% endfor %}
   </tbody></table></div>
 
-<h2 class="h6 mt-4">Supplier balances (amount owed)</h2>
-<div class="table-responsive"><table class="table table-striped bg-white">
+<h2 class="h6 rp-sec">Supplier balances (amount owed)<small>How much of each purchase is settled</small></h2>
+<div class="table-responsive"><table class="table table-striped bg-white" id="tbl-sup">
   <thead><tr><th>Supplier</th><th class="text-end">Purchased</th><th class="text-end">Paid</th><th class="text-end">Due</th></tr></thead>
   <tbody>
-  {% for s in supplier_dues %}<tr><td>{{ s.name }}</td><td class="text-end">₹{{ s.total }}</td><td class="text-end">₹{{ s.paid }}</td><td class="text-end text-danger">₹{{ s.due }}</td></tr>
+  {% for s in supplier_dues %}<tr><td>{{ s.name }}</td><td class="text-end money">₹{{ s.total|floatformat:"-2" }}</td><td class="text-end money">₹{{ s.paid|floatformat:"-2" }}</td><td class="text-end text-danger money">₹{{ s.due|floatformat:"-2" }}</td></tr>
   {% empty %}<tr><td colspan="4" class="text-muted text-center py-3">Nothing owed to suppliers.</td></tr>{% endfor %}
   </tbody></table></div>
 
-<h2 class="h6 mt-4">Low stock</h2>
-<div class="table-responsive"><table class="table table-striped bg-white">
+<h2 class="h6 rp-sec">Low stock<small>The bar shows stock left against the alert level</small></h2>
+<div class="table-responsive"><table class="table table-striped bg-white" id="tbl-low">
   <thead><tr><th>Product</th><th>Stock</th><th>Alert level</th></tr></thead>
   <tbody>
   {% for p in low_stock %}<tr><td>{{ p.name }}{% if p.size %} {{ p.size }}{% endif %}{% if p.color %} {{ p.color }}{% endif %}</td>
     <td>{{ p.stock|floatformat:"-2" }} {{ p.unit }}</td><td>{{ p.low_stock_level|floatformat:"-2" }}</td></tr>
   {% empty %}<tr><td colspan="3" class="text-muted text-center py-3">Nothing is running low.</td></tr>{% endfor %}
   </tbody></table></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- number helpers: no trailing .00, Indian digit grouping ---------- */
+  function num(t) { var n = parseFloat(String(t).replace(/[^\d.\-]/g, '')); return isFinite(n) ? n : 0; }
+  function inr(v) {
+    var whole = Math.round(Math.abs(v) * 100) % 100 === 0;
+    var s = Math.abs(v).toLocaleString('en-IN', { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: whole ? 0 : 2 });
+    return (v < 0 ? '-' : '') + '\u20B9' + s;
+  }
+  function mk(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+  function rows(id) {
+    return [].filter.call(document.querySelectorAll('#' + id + ' tbody tr'), function (tr) {
+      return tr.children.length > 1 && tr.children[0].colSpan === 1;
+    });
+  }
+  function wrap(td) {
+    var w = mk('div', 'cellwrap');
+    while (td.firstChild) w.appendChild(td.firstChild);
+    td.appendChild(w);
+    return w;
+  }
+  function meter(pct, cls) {
+    var b = mk('span', 'mbar' + (cls ? ' ' + cls : ''));
+    var i = document.createElement('i');
+    i.style.width = Math.max(2, Math.min(100, pct)) + '%';
+    b.appendChild(i);
+    return b;
+  }
+
+  /* ---------- headline numbers ---------- */
+  var sales = num(document.getElementById('v-sales').textContent);
+  var refunds = num(document.getElementById('v-refunds').textContent);
+  var bills = num(document.getElementById('v-bills').textContent);
+  var avg = document.getElementById('v-avg');
+  avg.textContent = bills > 0 ? inr(sales / bills) : '\u2014';
+  if (bills <= 0) avg.removeAttribute('data-kind');
+
+  if (sales > 0) {
+    var pct = Math.min(100, refunds / sales * 100);
+    document.getElementById('split').hidden = false;
+    document.getElementById('split-keep').style.width = (100 - pct) + '%';
+    document.getElementById('split-ref').style.width = pct + '%';
+    document.getElementById('split-note').textContent = refunds > 0
+      ? (pct < 1 ? 'Under 1%' : Math.round(pct) + '%') + ' of sales was refunded'
+      : 'No refunds in this period';
+  }
+
+  /* money cells in tables */
+  [].forEach.call(document.querySelectorAll('td.money'), function (td) { td.textContent = inr(num(td.textContent)); });
+
+  /* count-up for headline numbers (final text is always the formatted value) */
+  [].forEach.call(document.querySelectorAll('.count'), function (el) {
+    var kind = el.getAttribute('data-kind');
+    var v = num(el.textContent);
+    if (kind === 'money') el.textContent = inr(v);
+    if (reduce || !kind || v === 0) return;
+    var start = null, dur = 800;
+    function step(ts) {
+      if (start === null) start = ts;
+      var p = Math.min((ts - start) / dur, 1), e = 1 - Math.pow(1 - p, 3), cur = v * e;
+      if (p < 1) {
+        el.textContent = kind === 'money' ? '\u20B9' + Math.round(cur).toLocaleString('en-IN') : String(Math.round(cur));
+        requestAnimationFrame(step);
+      } else { el.textContent = kind === 'money' ? inr(v) : String(Math.round(v)); }
+    }
+    requestAnimationFrame(step);
+  });
+
+  /* ---------- daily chart, built from the table below ---------- */
+  var drows = rows('tbl-daily').map(function (tr) {
+    var label = tr.children[0].textContent.trim();
+    return { label: label, t: Date.parse(label), bills: tr.children[1].textContent.trim(), total: num(tr.children[2].textContent) };
+  });
+  if (drows.length) {
+    if (drows.every(function (r) { return !isNaN(r.t); })) drows.sort(function (a, b) { return a.t - b.t; });
+    var max = Math.max.apply(null, drows.map(function (r) { return r.total; })) || 1;
+    var peak = drows.reduce(function (a, b) { return b.total > a.total ? b : a; });
+    var chart = document.getElementById('daily-chart');
+    drows.forEach(function (r, i) {
+      var parts = r.label.split(' ');
+      var cb = mk('div', 'cb' + (r === peak && drows.length > 1 ? ' peak' : ''));
+      var slot = mk('div', 'cslot'), bar = document.createElement('i');
+      bar.style.height = Math.max(3, r.total / max * 100) + '%';
+      if (!reduce) bar.style.animationDelay = Math.min(i, 30) * 25 + 'ms';
+      slot.appendChild(bar);
+      cb.appendChild(slot);
+      cb.appendChild(mk('span', 'clab', drows.length <= 10 ? parts[0] + ' ' + (parts[1] || '') : parts[0]));
+      cb.appendChild(mk('span', 'tip', r.label + ' \u00B7 ' + inr(r.total) + ' \u00B7 ' + r.bills + (r.bills === '1' ? ' bill' : ' bills')));
+      chart.appendChild(cb);
+    });
+    document.getElementById('chart-peak').textContent = drows.length > 1 && peak.total > 0
+      ? 'Best day: ' + peak.label.split(' ').slice(0, 2).join(' ') + ', ' + inr(peak.total) : '';
+    document.getElementById('chart-card').hidden = false;
+  }
+
+  /* ---------- table meters ---------- */
+  var staff = rows('tbl-staff'), staffSum = 0;
+  staff.forEach(function (tr) { staffSum += num(tr.children[2].textContent); });
+  staff.forEach(function (tr) {
+    if (!staffSum) return;
+    var share = num(tr.children[2].textContent) / staffSum * 100;
+    var w = wrap(tr.children[0]);
+    w.appendChild(meter(share));
+    w.appendChild(mk('span', 'mnote', Math.round(share) + '% of sales'));
+  });
+
+  var top = rows('tbl-top'), topMax = 0;
+  top.forEach(function (tr) { topMax = Math.max(topMax, num(tr.children[2].textContent)); });
+  top.forEach(function (tr, i) {
+    var w = wrap(tr.children[0]);
+    w.insertBefore(mk('span', 'rk' + (i < 3 ? ' top' : ''), String(i + 1)), w.firstChild);
+    if (topMax) w.appendChild(meter(num(tr.children[2].textContent) / topMax * 100));
+  });
+
+  rows('tbl-sup').forEach(function (tr) {
+    var bought = num(tr.children[1].textContent), paid = num(tr.children[2].textContent);
+    if (!bought) return;
+    var share = Math.min(100, paid / bought * 100);
+    var w = wrap(tr.children[0]);
+    w.appendChild(meter(share, 'green'));
+    w.appendChild(mk('span', 'mnote', Math.round(share) + '% paid'));
+  });
+
+  rows('tbl-low').forEach(function (tr) {
+    var left = num(tr.children[1].textContent), alert = num(tr.children[2].textContent);
+    var w = wrap(tr.children[0]);
+    w.appendChild(meter(alert > 0 ? left / alert * 100 : 0, 'red'));
+  });
+
+  /* ---------- quick date ranges ---------- */
+  function ymd(d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  var form = document.getElementById('period-form');
+  document.getElementById('quick').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-r]');
+    if (!b) return;
+    var end = new Date(), start = new Date(), r = b.getAttribute('data-r');
+    if (r === '7') start.setDate(end.getDate() - 6);
+    else if (r === '30') start.setDate(end.getDate() - 29);
+    else if (r === 'month') start = new Date(end.getFullYear(), end.getMonth(), 1);
+    form.elements['from'].value = ymd(start);
+    form.elements['to'].value = ymd(end);
+    form.submit();
+  });
+})();
+</script>
 {% endblock %}
