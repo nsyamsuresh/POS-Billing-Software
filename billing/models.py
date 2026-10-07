@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from catalog.models import Product, Purchase
+from decimal import Decimal
 
 class Sale(models.Model):
     bill_no = models.CharField(max_length=20, unique=True)
@@ -19,9 +20,24 @@ class SaleItem(models.Model):
     quantity = models.DecimalField(max_digits=10, decimal_places=2)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     gst_percent = models.DecimalField(max_digits=5, decimal_places=2)
+
     @property
     def line_total(self):
         return self.unit_price * self.quantity
+
+    @property
+    def returned_qty(self):
+        return self.returnitem_set.aggregate(t=models.Sum('quantity'))['t'] or Decimal('0')
+
+    def net_unit_price(self):
+        """Per-unit refund: price plus GST, minus this item's share of the bill discount."""
+        sale = self.sale
+        if not sale.subtotal or not self.quantity:
+            return Decimal('0')
+        line = self.unit_price * self.quantity
+        share = sale.discount * line / sale.subtotal
+        gross = (line - share) * (1 + self.gst_percent / 100)
+        return gross / self.quantity
 
 class Payment(models.Model):
     METHODS = [("cash", "Cash"), ("card", "Card"), ("upi", "UPI")]

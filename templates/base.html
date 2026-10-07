@@ -65,6 +65,9 @@
             <li class="nav-item"><a class="nav-link {% if 'product' in page %}active{% endif %}" href="{% url 'product_list' %}">Products</a></li>
             <li class="nav-item"><a class="nav-link {% if 'supplier' in page %}active{% endif %}" href="{% url 'supplier_list' %}">Suppliers</a></li>
             <li class="nav-item"><a class="nav-link {% if 'staff' in page %}active{% endif %}" href="{% url 'staff_list' %}">Staff</a></li>
+            <li class="nav-item"><a class="nav-link {% if 'return' in page %}active{% endif %}" href="{% url 'return_list' %}">Returns</a></li>
+            <li class="nav-item"><a class="nav-link {% if 'purchase' in page %}active{% endif %}" href="{% url 'purchase_list' %}">Purchases</a></li>
+            <li class="nav-item"><a class="nav-link {% if page == 'ledger' %}active{% endif %}" href="{% url 'ledger' %}">Ledger</a></li>
         </ul>
     </div>
   </aside>

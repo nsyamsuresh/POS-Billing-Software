@@ -31,6 +31,9 @@ class Purchase(models.Model):
     date = models.DateField(auto_now_add=True)
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     paid = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    @property
+    def due(self):
+        return self.total - self.paid
 
 class PurchaseItem(models.Model):
     purchase = models.ForeignKey(Purchase, related_name="items", on_delete=models.CASCADE)

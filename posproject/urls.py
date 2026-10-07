@@ -31,4 +31,12 @@ urlpatterns = [
     path('products/<int:pk>/edit/', cat.ProductUpdate.as_view(), name='product_edit'),
     path('products/<int:pk>/delete/', cat.ProductDelete.as_view(), name='product_delete'),
 
+    path('returns/', bill.return_list, name='return_list'),
+    path('returns/new/', bill.return_lookup, name='return_lookup'),
+    path('returns/new/<int:pk>/', bill.return_create, name='return_create'),
+    path('purchases/', bill.purchase_list, name='purchase_list'),
+    path('purchases/add/', bill.purchase_create, name='purchase_add'),
+    path('purchases/<int:pk>/pay/', bill.purchase_pay, name='purchase_pay'),
+    path('ledger/', bill.ledger, name='ledger'),
+
 ]

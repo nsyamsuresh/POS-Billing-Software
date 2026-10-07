@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}New purchase{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">New purchase from supplier</h1>
+<form method="post" class="card card-body">{% csrf_token %}
+  <div class="row g-3 mb-3">
+    <div class="col-md-6"><label class="form-label">Supplier</label>
+      <select class="form-select" name="supplier" required>
+        <option value="">Choose supplier</option>
+        {% for s in suppliers %}<option value="{{ s.pk }}">{{ s.name }}</option>{% endfor %}
+      </select></div>
+    <div class="col-md-3"><label class="form-label">Paid now (₹)</label>
+      <input class="form-control" type="number" step="0.01" min="0" name="paid" value="0"></div>
+  </div>
+  <div class="table-responsive">
+  <table class="table align-middle" id="rows">
+    <thead><tr><th>Product</th><th style="width:140px">Quantity</th><th style="width:160px">Unit cost (₹)</th><th class="text-end" style="width:130px">Amount</th><th></th></tr></thead>
+    <tbody></tbody>
+  </table>
+  </div>
+  <button type="button" class="btn btn-outline-dark btn-sm mb-3 align-self-start" id="add-row">Add item</button>
+  <div class="d-flex justify-content-between align-items-center">
+    <div class="fs-5">Total: <strong id="grand">₹0.00</strong></div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-dark">Save purchase</button>
+      <a class="btn btn-outline-secondary" href="{% url 'purchase_list' %}">Cancel</a>
+    </div>
+  </div>
+</form>
+
+<template id="row-tpl">
+  <tr>
+    <td><select class="form-select" name="product" required>
+      <option value="">Choose product</option>
+      {% for p in products %}<option value="{{ p.pk }}">{{ p.name }}{% if p.size %} {{ p.size }}{% endif %}{% if p.color %} {{ p.color }}{% endif %} ({{ p.unit }})</option>{% endfor %}
+    </select></td>
+    <td><input class="form-control qty" type="number" step="0.01" min="0.01" name="qty" required></td>
+    <td><input class="form-control cost" type="number" step="0.01" min="0" name="cost" required></td>
+    <td class="text-end amount">₹0.00</td>
+    <td><button type="button" class="btn btn-sm btn-outline-danger remove">Remove</button></td>
+  </tr>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var tbody = document.querySelector('#rows tbody');
+  var tpl = document.getElementById('row-tpl');
+  function recalc() {
+    var grand = 0;
+    tbody.querySelectorAll('tr').forEach(function (tr) {
+      var q = parseFloat(tr.querySelector('.qty').value) || 0;
+      var c = parseFloat(tr.querySelector('.cost').value) || 0;
+      var a = Math.round(q * c * 100) / 100;
+      tr.querySelector('.amount').textContent = '\u20B9' + a.toFixed(2);
+      grand += a;
+    });
+    document.getElementById('grand').textContent = '\u20B9' + grand.toFixed(2);
+  }
+  function addRow() {
+    tbody.appendChild(tpl.content.cloneNode(true));
+  }
+  tbody.addEventListener('input', recalc);
+  tbody.addEventListener('click', function (e) {
+    if (e.target.classList.contains('remove')) {
+      e.target.closest('tr').remove();
+      recalc();
+    }
+  });
+  document.getElementById('add-row').addEventListener('click', addRow);
+  addRow();
+})();
+</script>
+{% endblock %}
