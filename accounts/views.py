@@ -32,9 +32,7 @@ def dashboard(request):
     return render(request, 'accounts/dashboard.html', ctx)
 
 
-@login_required
-def pos(request):
-    return render(request, 'billing/pos.html')
+
 
 
 # ---------- Staff management (admin only) ----------

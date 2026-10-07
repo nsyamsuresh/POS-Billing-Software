@@ -136,3 +136,4 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'login'
 MESSAGE_TAGS = {message_constants.ERROR: 'danger'}
+TIME_ZONE = 'Asia/Kolkata'

@@ -10,6 +10,8 @@ class Sale(models.Model):
     discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     gst_total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=12, decimal_places=2)
+    customer_name = models.CharField(max_length=100, blank=True)
+    customer_phone = models.CharField(max_length=20, blank=True)
 
 class SaleItem(models.Model):
     sale = models.ForeignKey(Sale, related_name="items", on_delete=models.CASCADE)
@@ -17,6 +19,9 @@ class SaleItem(models.Model):
     quantity = models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     gst_percent = models.DecimalField(max_digits=5, decimal_places=2)
+    @property
+    def line_total(self):
+        return self.unit_price * self.quantity
 
 class Payment(models.Model):
     METHODS = [("cash", "Cash"), ("card", "Card"), ("upi", "UPI")]

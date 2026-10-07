@@ -1,6 +1,220 @@
 {% extends 'base.html' %}
 {% block title %}Billing{% endblock %}
 {% block content %}
-<h3>Billing</h3>
-<p class="text-muted">Billing screen coming in phase 3.</p>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">New bill</h1>
+  <a class="btn btn-outline-dark btn-sm" href="{% url 'sale_list' %}">Bill history</a>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card card-body mb-3">
+      <input id="search" class="form-control form-control-lg" autocomplete="off" autofocus
+             placeholder="Scan a barcode or type a product name, then press Enter">
+      <div id="results" class="list-group mt-2"></div>
+    </div>
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead><tr><th>Product</th><th>Rate</th><th style="width:170px">Qty</th><th class="text-end">Amount</th><th></th></tr></thead>
+          <tbody id="cart-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <form method="post" action="{% url 'checkout' %}" id="bill-form" class="card card-body">
+      {% csrf_token %}
+      <input type="hidden" name="cart" id="cart-field">
+      <div class="mb-2"><label class="form-label">Customer name (optional)</label>
+        <input class="form-control" name="customer_name" maxlength="100"></div>
+      <div class="mb-3"><label class="form-label">Customer phone (optional)</label>
+        <input class="form-control" name="customer_phone" maxlength="20"></div>
+      <div class="mb-3"><label class="form-label">Discount (₹)</label>
+        <input class="form-control" type="number" step="0.01" min="0" name="discount" id="discount" value="0"></div>
+
+      <dl class="row mb-3">
+        <dt class="col-6 fw-normal">Subtotal</dt><dd class="col-6 text-end" id="t-sub">₹0.00</dd>
+        <dt class="col-6 fw-normal">Discount</dt><dd class="col-6 text-end" id="t-disc">₹0.00</dd>
+        <dt class="col-6 fw-normal">GST</dt><dd class="col-6 text-end" id="t-gst">₹0.00</dd>
+        <dt class="col-6 fs-5">Total</dt><dd class="col-6 text-end fs-5 fw-bold" id="t-total">₹0.00</dd>
+      </dl>
+
+      <div class="mb-3"><label class="form-label">Payment method</label>
+        <select class="form-select" name="method" id="method">
+          <option value="cash">Cash</option><option value="card">Card</option><option value="upi">UPI</option>
+        </select></div>
+      <div id="cash-box" class="mb-3">
+        <label class="form-label">Cash received (₹)</label>
+        <input class="form-control" type="number" step="0.01" min="0" id="received">
+        <div class="form-text">Change to return: <strong id="change">₹0.00</strong></div>
+      </div>
+      <button class="btn btn-dark btn-lg" id="pay-btn">Complete sale</button>
+    </form>
+  </div>
+</div>
+{{ products|json_script:"product-data" }}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var PRODUCTS = JSON.parse(document.getElementById('product-data').textContent);
+  var byId = {};
+  PRODUCTS.forEach(function (p) { byId[p.id] = p; });
+  var cart = {};
+
+  var searchEl = document.getElementById('search');
+  var resultsEl = document.getElementById('results');
+  var bodyEl = document.getElementById('cart-body');
+  var discountEl = document.getElementById('discount');
+  var methodEl = document.getElementById('method');
+  var receivedEl = document.getElementById('received');
+  var form = document.getElementById('bill-form');
+
+  function fmt(n) { return '\u20B9' + n.toFixed(2); }
+  function r2(n) { return Math.round((n + 1e-9) * 100) / 100; }
+
+  function setQty(id, q) {
+    var p = byId[id];
+    if (q < 1) { delete cart[id]; }
+    else if (q > p.stock) { alert('Only ' + p.stock + ' of ' + p.name + ' in stock.'); cart[id] = p.stock; }
+    else { cart[id] = q; }
+    render();
+  }
+
+  function pick(id) {
+    setQty(id, (cart[id] || 0) + 1);
+    searchEl.value = '';
+    resultsEl.textContent = '';
+    searchEl.focus();
+  }
+
+  function matches(term) {
+    term = term.toLowerCase();
+    return PRODUCTS.filter(function (p) {
+      return p.name.toLowerCase().indexOf(term) !== -1 ||
+             (p.barcode && p.barcode.toLowerCase().indexOf(term) !== -1);
+    }).slice(0, 8);
+  }
+
+  searchEl.addEventListener('input', function () {
+    resultsEl.textContent = '';
+    var t = searchEl.value.trim();
+    if (!t) return;
+    matches(t).forEach(function (p) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'list-group-item list-group-item-action d-flex justify-content-between';
+      var a = document.createElement('span'); a.textContent = p.name;
+      var c = document.createElement('span'); c.textContent = fmt(p.price) + '  |  stock ' + p.stock;
+      b.appendChild(a); b.appendChild(c);
+      b.addEventListener('click', function () { pick(p.id); });
+      resultsEl.appendChild(b);
+    });
+  });
+
+  searchEl.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    var t = searchEl.value.trim().toLowerCase();
+    if (!t) return;
+    var exact = PRODUCTS.filter(function (p) { return p.barcode && p.barcode.toLowerCase() === t; })[0];
+    var found = exact || matches(t)[0];
+    if (found) pick(found.id);
+  });
+
+  function totals() {
+    var ids = Object.keys(cart), subtotal = 0;
+    ids.forEach(function (id) { subtotal += r2(byId[id].price * cart[id]); });
+    var discount = parseFloat(discountEl.value) || 0;
+    if (discount < 0) discount = 0;
+    if (discount > subtotal) discount = subtotal;
+    var gst = 0;
+    ids.forEach(function (id) {
+      var line = r2(byId[id].price * cart[id]);
+      var share = subtotal ? discount * line / subtotal : 0;
+      gst += (line - share) * byId[id].gst_percent / 100;
+    });
+    gst = r2(gst);
+    return { subtotal: r2(subtotal), discount: r2(discount), gst: gst, total: r2(subtotal - discount + gst) };
+  }
+
+  function render() {
+    bodyEl.textContent = '';
+    var ids = Object.keys(cart);
+    if (!ids.length) {
+      var tr0 = document.createElement('tr');
+      var td0 = document.createElement('td');
+      td0.colSpan = 5; td0.className = 'text-center text-muted py-4';
+      td0.textContent = 'The bill is empty. Search for a product above.';
+      tr0.appendChild(td0); bodyEl.appendChild(tr0);
+    }
+    ids.forEach(function (id) {
+      var p = byId[id], q = cart[id];
+      var tr = document.createElement('tr');
+      function cell(text, cls) {
+        var td = document.createElement('td');
+        td.textContent = text; if (cls) td.className = cls;
+        tr.appendChild(td); return td;
+      }
+      cell(p.name); cell(fmt(p.price));
+
+      var qtyTd = document.createElement('td');
+      var grp = document.createElement('div'); grp.className = 'input-group input-group-sm';
+      var minus = document.createElement('button'); minus.type = 'button';
+      minus.className = 'btn btn-outline-secondary'; minus.textContent = '-';
+      minus.addEventListener('click', function () { setQty(id, cart[id] - 1); });
+      var inp = document.createElement('input'); inp.type = 'number'; inp.min = 1;
+      inp.className = 'form-control text-center'; inp.value = q;
+      inp.addEventListener('change', function () { setQty(id, parseInt(inp.value, 10) || 1); });
+      var plus = document.createElement('button'); plus.type = 'button';
+      plus.className = 'btn btn-outline-secondary'; plus.textContent = '+';
+      plus.addEventListener('click', function () { setQty(id, cart[id] + 1); });
+      grp.appendChild(minus); grp.appendChild(inp); grp.appendChild(plus);
+      qtyTd.appendChild(grp); tr.appendChild(qtyTd);
+
+      cell(fmt(r2(p.price * q)), 'text-end');
+      var rm = document.createElement('button'); rm.type = 'button';
+      rm.className = 'btn btn-sm btn-outline-danger'; rm.textContent = 'Remove';
+      rm.addEventListener('click', function () { setQty(id, 0); });
+      var rmTd = document.createElement('td'); rmTd.appendChild(rm); tr.appendChild(rmTd);
+      bodyEl.appendChild(tr);
+    });
+    updateSummary();
+  }
+
+  function updateSummary() {
+    var t = totals();
+    document.getElementById('t-sub').textContent = fmt(t.subtotal);
+    document.getElementById('t-disc').textContent = fmt(t.discount);
+    document.getElementById('t-gst').textContent = fmt(t.gst);
+    document.getElementById('t-total').textContent = fmt(t.total);
+    var received = parseFloat(receivedEl.value) || 0;
+    document.getElementById('change').textContent = fmt(received > t.total ? r2(received - t.total) : 0);
+    document.getElementById('cash-box').style.display = methodEl.value === 'cash' ? '' : 'none';
+  }
+
+  discountEl.addEventListener('input', updateSummary);
+  receivedEl.addEventListener('input', updateSummary);
+  methodEl.addEventListener('change', updateSummary);
+
+  form.addEventListener('submit', function (e) {
+    var ids = Object.keys(cart);
+    if (!ids.length) { e.preventDefault(); alert('Add at least one product.'); return; }
+    var t = totals();
+    var received = parseFloat(receivedEl.value) || 0;
+    if (methodEl.value === 'cash' && receivedEl.value !== '' && received < t.total) {
+      e.preventDefault(); alert('Cash received is less than the total.'); return;
+    }
+    document.getElementById('cart-field').value = JSON.stringify(
+      ids.map(function (id) { return { id: Number(id), qty: cart[id] }; })
+    );
+    document.getElementById('pay-btn').disabled = true;
+  });
+
+  render();
+})();
+</script>
 {% endblock %}

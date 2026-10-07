@@ -32,6 +32,10 @@
               aria-label="Open menu">&#9776;</button>
       {% endif %}
       <a class="navbar-brand m-0" href="{% url 'home' %}">POS Billing</a>
+      {% if user.is_authenticated and not user.is_admin_role %}
+      <a class="nav-link text-white-50 px-2" href="{% url 'pos' %}">New bill</a>
+      <a class="nav-link text-white-50 px-2" href="{% url 'sale_list' %}">My bills</a>
+      {% endif %}
     </div>
     {% if user.is_authenticated %}
     <div class="d-flex align-items-center gap-3">
@@ -54,13 +58,14 @@
       <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
     </div>
     <div class="offcanvas-body p-3">
-      <ul class="nav flex-column gap-1 w-100">
-        <li class="nav-item"><a class="nav-link {% if page == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Dashboard</a></li>
-        <li class="nav-item"><a class="nav-link {% if page == 'pos' %}active{% endif %}" href="{% url 'pos' %}">Billing</a></li>
-        <li class="nav-item"><a class="nav-link {% if 'product' in page %}active{% endif %}" href="{% url 'product_list' %}">Products</a></li>
-        <li class="nav-item"><a class="nav-link {% if 'supplier' in page %}active{% endif %}" href="{% url 'supplier_list' %}">Suppliers</a></li>
-        <li class="nav-item"><a class="nav-link {% if 'staff' in page %}active{% endif %}" href="{% url 'staff_list' %}">Staff</a></li>
-      </ul>
+        <ul class="nav flex-column gap-1 w-100">
+            <li class="nav-item"><a class="nav-link {% if page == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link {% if page == 'pos' %}active{% endif %}" href="{% url 'pos' %}">Billing</a></li>
+            <li class="nav-item"><a class="nav-link {% if page == 'sale_list' or page == 'receipt' %}active{% endif %}" href="{% url 'sale_list' %}">Bills</a></li>
+            <li class="nav-item"><a class="nav-link {% if 'product' in page %}active{% endif %}" href="{% url 'product_list' %}">Products</a></li>
+            <li class="nav-item"><a class="nav-link {% if 'supplier' in page %}active{% endif %}" href="{% url 'supplier_list' %}">Suppliers</a></li>
+            <li class="nav-item"><a class="nav-link {% if 'staff' in page %}active{% endif %}" href="{% url 'staff_list' %}">Staff</a></li>
+        </ul>
     </div>
   </aside>
   {% endif %}

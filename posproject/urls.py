@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import path
-
+from billing import views as bill
 from accounts import views as acc
 from catalog import views as cat
 
@@ -11,7 +11,10 @@ urlpatterns = [
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('dashboard/', acc.dashboard, name='dashboard'),
-    path('billing/', acc.pos, name='pos'),
+    path('billing/', bill.pos, name='pos'),
+    path('billing/checkout/', bill.checkout, name='checkout'),
+    path('bills/', bill.sale_list, name='sale_list'),
+    path('bills/<int:pk>/', bill.receipt, name='receipt'),
 
     path('staff/', acc.StaffList.as_view(), name='staff_list'),
     path('staff/add/', acc.StaffCreate.as_view(), name='staff_add'),
@@ -26,4 +29,5 @@ urlpatterns = [
     path('products/add/', cat.ProductCreate.as_view(), name='product_add'),
     path('products/<int:pk>/edit/', cat.ProductUpdate.as_view(), name='product_edit'),
     path('products/<int:pk>/delete/', cat.ProductDelete.as_view(), name='product_delete'),
+
 ]
