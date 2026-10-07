@@ -6,7 +6,7 @@
   <a class="btn btn-dark" href="{% url 'product_add' %}">Add product</a>
 </div>
 <form class="row g-2 mb-3" method="get">
-  <div class="col-md-5"><input class="form-control" name="q" value="{{ request.GET.q }}" placeholder="Search name, barcode or category"></div>
+  <div class="col-md-5"><input class="form-control" name="q" value="{{ request.GET.q }}" placeholder="Search name, barcode, category, brand, size or colour"></div>
   <div class="col-auto form-check d-flex align-items-center gap-2">
     <input class="form-check-input" type="checkbox" name="low" id="low" value="1" {% if request.GET.low %}checked{% endif %}>
     <label for="low">Low stock only</label>
@@ -15,16 +15,17 @@
 </form>
 <div class="table-responsive">
 <table class="table table-striped align-middle bg-white">
-  <thead><tr><th>Name</th><th>Barcode</th><th>Category</th><th>Price</th><th>GST %</th><th>Stock</th><th>Supplier</th><th></th></tr></thead>
+  <thead><tr><th>Name</th><th>Size / colour</th><th>Barcode</th><th>Category</th><th>Price</th><th>GST %</th><th>Stock</th><th>Supplier</th><th></th></tr></thead>
   <tbody>
   {% for p in products %}
     <tr {% if not p.is_active %}class="text-muted"{% endif %}>
-      <td>{{ p.name }}{% if not p.is_active %} <span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+      <td>{{ p.name }}{% if p.brand %}<br><span class="small text-muted">{{ p.brand }}</span>{% endif %}{% if not p.is_active %} <span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+      <td>{{ p.size|default:"-" }}{% if p.color %} / {{ p.color }}{% endif %}</td>
       <td>{{ p.barcode|default:"-" }}</td>
       <td>{{ p.category|default:"-" }}</td>
-      <td>₹{{ p.price }}</td>
+      <td>₹{{ p.price }}{% if p.unit == 'meter' %} / m{% endif %}</td>
       <td>{{ p.gst_percent }}</td>
-      <td>{{ p.stock }}{% if p.stock <= p.low_stock_level %} <span class="badge bg-danger">Low</span>{% endif %}</td>
+      <td>{{ p.stock|floatformat:"-2" }} {{ p.unit }}{% if p.stock <= p.low_stock_level %} <span class="badge bg-danger">Low</span>{% endif %}</td>
       <td>{{ p.supplier|default:"-" }}</td>
       <td class="text-nowrap">
         <a class="btn btn-sm btn-outline-dark" href="{% url 'product_edit' p.pk %}">Edit</a>
@@ -32,7 +33,7 @@
       </td>
     </tr>
   {% empty %}
-    <tr><td colspan="8" class="text-center text-muted py-4">No products yet. Add your first product.</td></tr>
+    <tr><td colspan="9" class="text-center text-muted py-4">No products yet. Add your first product.</td></tr>
   {% endfor %}
   </tbody>
 </table>

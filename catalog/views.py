@@ -58,7 +58,7 @@ class ProductList(AdminRequiredMixin, ListView):
         qs = Product.objects.select_related('supplier').order_by('name')
         q = self.request.GET.get('q', '').strip()
         if q:
-            qs = qs.filter(Q(name__icontains=q) | Q(barcode__icontains=q) | Q(category__icontains=q))
+            qs = qs.filter(Q(name__icontains=q) | Q(barcode__icontains=q) | Q(category__icontains=q)| Q(brand__icontains=q) | Q(size__icontains=q) | Q(color__icontains=q)| Q(fabric__icontains=q))
         if self.request.GET.get('low'):
             qs = qs.filter(stock__lte=F('low_stock_level'))
         return qs

@@ -8,7 +8,7 @@
   .receipt .r { text-align: right; }
   @media print {
     @page { margin: 6mm; }
-    .receipt { max-width: 100%; padding: 0; }
+    .receipt { max-width: 100%; padding: 0; border: 0 !important; }
   }
 </style>
 {% endblock %}
@@ -31,10 +31,13 @@
     <tbody>
     {% for i in sale.items.all %}
       <tr>
-        <td>{{ i.product.name }}<br><span class="text-muted small">GST {{ i.gst_percent }}%</span></td>
-        <td class="r">{{ i.quantity }}</td>
-        <td class="r">{{ i.unit_price }}</td>
-        <td class="r">{{ i.line_total }}</td>
+        <td>
+          {{ i.product.name }}{% if i.product.size %} {{ i.product.size }}{% endif %}{% if i.product.color %} {{ i.product.color }}{% endif %}
+          <br><span class="text-muted small">{% if i.product.hsn_code %}HSN {{ i.product.hsn_code }} | {% endif %}GST {{ i.gst_percent|floatformat:"-2" }}%</span>
+        </td>
+        <td class="r">{{ i.quantity|floatformat:"-2" }} {{ i.product.unit }}</td>
+        <td class="r">{{ i.unit_price|floatformat:2 }}</td>
+        <td class="r">{{ i.line_total|floatformat:2 }}</td>
       </tr>
     {% endfor %}
     </tbody>
@@ -42,7 +45,7 @@
   <hr class="my-2">
   <table>
     <tr><td>Subtotal</td><td class="r">₹{{ sale.subtotal }}</td></tr>
-    <tr><td>Discount</td><td class="r">-₹{{ sale.discount }}</td></tr>
+    {% if sale.discount %}<tr><td>Discount</td><td class="r">-₹{{ sale.discount }}</td></tr>{% endif %}
     <tr><td>GST</td><td class="r">₹{{ sale.gst_total }}</td></tr>
     <tr class="fw-bold fs-5"><td>Total</td><td class="r">₹{{ sale.total }}</td></tr>
   </table>

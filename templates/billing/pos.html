@@ -75,12 +75,20 @@
 
   function fmt(n) { return '\u20B9' + n.toFixed(2); }
   function r2(n) { return Math.round((n + 1e-9) * 100) / 100; }
+  function stepOf(p) { return p.unit === 'meter' ? 0.5 : 1; }
+  function label(p) {
+    var extra = [p.size, p.color].filter(Boolean).join(' / ');
+    return extra ? p.name + ' (' + extra + ')' : p.name;
+  }
 
   function setQty(id, q) {
     var p = byId[id];
-    if (q < 1) { delete cart[id]; }
-    else if (q > p.stock) { alert('Only ' + p.stock + ' of ' + p.name + ' in stock.'); cart[id] = p.stock; }
-    else { cart[id] = q; }
+    q = r2(q);
+    if (q <= 0) { delete cart[id]; }
+    else if (q > p.stock) {
+      alert('Only ' + p.stock + ' ' + p.unit + ' of ' + p.name + ' in stock.');
+      cart[id] = p.stock;
+    } else { cart[id] = q; }
     render();
   }
 
@@ -94,7 +102,7 @@
   function matches(term) {
     term = term.toLowerCase();
     return PRODUCTS.filter(function (p) {
-      return p.name.toLowerCase().indexOf(term) !== -1 ||
+      return label(p).toLowerCase().indexOf(term) !== -1 ||
              (p.barcode && p.barcode.toLowerCase().indexOf(term) !== -1);
     }).slice(0, 8);
   }
@@ -107,8 +115,9 @@
       var b = document.createElement('button');
       b.type = 'button';
       b.className = 'list-group-item list-group-item-action d-flex justify-content-between';
-      var a = document.createElement('span'); a.textContent = p.name;
-      var c = document.createElement('span'); c.textContent = fmt(p.price) + '  |  stock ' + p.stock;
+      var a = document.createElement('span'); a.textContent = label(p);
+      var c = document.createElement('span');
+      c.textContent = fmt(p.price) + ' / ' + p.unit + '  |  stock ' + p.stock;
       b.appendChild(a); b.appendChild(c);
       b.addEventListener('click', function () { pick(p.id); });
       resultsEl.appendChild(b);
@@ -159,19 +168,25 @@
         td.textContent = text; if (cls) td.className = cls;
         tr.appendChild(td); return td;
       }
-      cell(p.name); cell(fmt(p.price));
+      cell(label(p));
+      cell(fmt(p.price) + ' / ' + p.unit);
 
       var qtyTd = document.createElement('td');
       var grp = document.createElement('div'); grp.className = 'input-group input-group-sm';
       var minus = document.createElement('button'); minus.type = 'button';
       minus.className = 'btn btn-outline-secondary'; minus.textContent = '-';
-      minus.addEventListener('click', function () { setQty(id, cart[id] - 1); });
-      var inp = document.createElement('input'); inp.type = 'number'; inp.min = 1;
+      minus.addEventListener('click', function () { setQty(id, cart[id] - stepOf(p)); });
+      var inp = document.createElement('input'); inp.type = 'number';
+      inp.min = p.unit === 'meter' ? 0.01 : 1;
+      inp.step = p.unit === 'meter' ? '0.01' : '1';
       inp.className = 'form-control text-center'; inp.value = q;
-      inp.addEventListener('change', function () { setQty(id, parseInt(inp.value, 10) || 1); });
+      inp.addEventListener('change', function () {
+        var v = parseFloat(inp.value) || 1;
+        setQty(id, p.unit === 'pcs' ? Math.round(v) : v);
+      });
       var plus = document.createElement('button'); plus.type = 'button';
       plus.className = 'btn btn-outline-secondary'; plus.textContent = '+';
-      plus.addEventListener('click', function () { setQty(id, cart[id] + 1); });
+      plus.addEventListener('click', function () { setQty(id, cart[id] + stepOf(p)); });
       grp.appendChild(minus); grp.appendChild(inp); grp.appendChild(plus);
       qtyTd.appendChild(grp); tr.appendChild(qtyTd);
 

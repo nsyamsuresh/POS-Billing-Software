@@ -16,7 +16,7 @@ class Sale(models.Model):
 class SaleItem(models.Model):
     sale = models.ForeignKey(Sale, related_name="items", on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
-    quantity = models.PositiveIntegerField()
+    quantity = models.DecimalField(max_digits=10, decimal_places=2)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     gst_percent = models.DecimalField(max_digits=5, decimal_places=2)
     @property
@@ -39,7 +39,7 @@ class SaleReturn(models.Model):
 class ReturnItem(models.Model):
     sale_return = models.ForeignKey(SaleReturn, related_name="items", on_delete=models.CASCADE)
     sale_item = models.ForeignKey(SaleItem, on_delete=models.PROTECT)
-    quantity = models.PositiveIntegerField()
+    quantity = models.DecimalField(max_digits=10, decimal_places=2)
 
 class LedgerEntry(models.Model):
     KINDS = [("sale", "Sale"), ("return", "Return"), ("purchase", "Purchase"),

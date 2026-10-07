@@ -26,11 +26,13 @@ def money(value):
 def pos(request):
     products = list(
         Product.objects.filter(is_active=True, stock__gt=0)
-        .values('id', 'name', 'barcode', 'price', 'gst_percent', 'stock')
+        .values('id', 'name', 'barcode', 'price', 'gst_percent', 'stock',
+                'unit', 'size', 'color')
     )
     for p in products:
         p['price'] = float(p['price'])
         p['gst_percent'] = float(p['gst_percent'])
+        p['stock'] = float(p['stock'])
         p['barcode'] = p['barcode'] or ''
     return render(request, 'billing/pos.html', {'products': products})
 
@@ -44,8 +46,9 @@ def checkout(request):
         discount = money(request.POST.get('discount') or '0')
         wanted = {}
         for row in cart:
-            pid, qty = int(row['id']), int(row['qty'])
-            if qty < 1:
+            pid = int(row['id'])
+            qty = Decimal(str(row['qty'])).quantize(Decimal('0.01'))
+            if qty <= 0:
                 raise ValueError
             wanted[pid] = wanted.get(pid, 0) + qty
     except (ValueError, TypeError, KeyError, ArithmeticError):
@@ -78,6 +81,8 @@ def checkout(request):
                 p = products.get(pid)
                 if p is None:
                     raise BillError('A product in the cart is no longer available.')
+                if p.unit == 'pcs' and qty != qty.to_integral_value():
+                    raise BillError(f'{p.name} is sold in whole pieces.')
                 if qty > p.stock:
                     raise BillError(f'Only {p.stock} of {p.name} in stock.')
                 line_total = money(p.price * qty)

@@ -11,5 +11,6 @@ class SupplierForm(BootstrapMixin, forms.ModelForm):
 class ProductForm(BootstrapMixin, forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['name', 'barcode', 'category', 'price', 'cost', 'gst_percent',
+        fields = ['name', 'barcode', 'category', 'brand', 'fabric', 'size', 'color',
+                  'hsn_code', 'unit', 'price', 'cost', 'gst_percent',
                   'stock', 'low_stock_level', 'supplier', 'is_active']
