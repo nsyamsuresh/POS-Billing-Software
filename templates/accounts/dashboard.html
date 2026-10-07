@@ -1,2 +1,31 @@
 {% extends 'base.html' %}
-{% block content %}<h1 class="h4">Dashboard</h1><p>Admin portal. Stats will appear here.</p>{% endblock %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h3 class="mb-4">Dashboard</h3>
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="card text-center"><div class="card-body">
+    <div class="fs-2">{{ product_count }}</div><div class="text-muted">Active products</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card text-center"><div class="card-body">
+    <div class="fs-2">{{ supplier_count }}</div><div class="text-muted">Suppliers</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card text-center"><div class="card-body">
+    <div class="fs-2">{{ staff_count }}</div><div class="text-muted">Active staff</div></div></div></div>
+  <div class="col-6 col-lg-3"><div class="card text-center border-warning"><div class="card-body">
+    <div class="fs-2">{{ low_stock_count }}</div><div class="text-muted">Low stock items</div></div></div></div>
+</div>
+
+<div class="card">
+  <div class="card-header">Low stock</div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Product</th><th>Stock</th><th>Alert level</th></tr></thead>
+      <tbody>
+      {% for p in low_stock %}
+        <tr><td>{{ p.name }}</td><td><span class="badge text-bg-warning">{{ p.stock }}</span></td><td>{{ p.low_stock_level }}</td></tr>
+      {% empty %}
+        <tr><td colspan="3" class="text-muted text-center">Nothing running low.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
