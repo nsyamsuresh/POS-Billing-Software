@@ -82,3 +82,9 @@ gunicorn posproject.wsgi:application
 ## Project structure
 
 `accounts` holds the custom user model, roles, staff management and the dashboard. `catalog` holds products, suppliers and purchase models and their pages. `billing` holds sales, payments, returns, the ledger and the printable bill. `reports` holds the reports page. `templates/` contains the shared layouts, including the desktop and mobile versions in `base.html`, and `posproject/middleware.py` serves the whole site under `/m/` with the mobile layout.
+
+
+
+## License
+
+Released under the MIT License. See the LICENSE file for details.
